@@ -1,135 +1,149 @@
 #!/usr/bin/env python3
-from flask import Flask, render_template, request, jsonify, send_file
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 import subprocess
 import os
 import glob
 from datetime import datetime
-import json
+from typing import Optional
 
-app = Flask(__name__)
+app = FastAPI(title="Scanner API", version="1.0")
 
 SCAN_SCRIPT = "/home/cy/airscan.sh"
 SCANS_DIR = "/home/cy/scans"
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+class ScanRequest(BaseModel):
+    name: Optional[str] = "scan"
+    resolution: int = 150
+    mode: str = "color"
+    source: str = "adf"
+    compress: bool = True
+    ocr: bool = False
 
-@app.route('/api/scan', methods=['POST'])
-def start_scan():
-    """Startet den Scan-Prozess"""
-    data = request.json
+class ScanResponse(BaseModel):
+    success: bool
+    output: Optional[str] = None
+    filename: Optional[str] = None
+    downloadUrl: Optional[str] = None
+    error: Optional[str] = None
+
+class ScanFile(BaseModel):
+    filename: str
+    size: int
+    created: str
+    downloadUrl: str
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the web interface"""
+    html_path = os.path.join(os.path.dirname(__file__), "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.post("/api/scan", response_model=ScanResponse)
+async def start_scan(request: ScanRequest):
+    """Start a scan job"""
+    cmd = [SCAN_SCRIPT, "-n", request.name]
+    cmd.extend(["-r", str(request.resolution)])
+    cmd.extend(["-m", request.mode])
     
-    # Parameter zusammenbauen
-    cmd = [SCAN_SCRIPT]
-    
-    if data.get('name'):
-        cmd.extend(['-n', data['name']])
-    
-    cmd.extend(['-r', str(data.get('resolution', 150))])
-    cmd.extend(['-m', data.get('mode', 'color')])
-    
-    if data.get('source') == 'flatbed':
-        cmd.append('--flatbed')
+    if request.source == "flatbed":
+        cmd.append("--flatbed")
     else:
-        cmd.append('--adf')
+        cmd.append("--adf")
     
-    if not data.get('compress', True):
-        cmd.append('--no-compress')
+    if not request.compress:
+        cmd.append("--no-compress")
     
-    if data.get('ocr', False):
-        cmd.append('--ocr')
+    if request.ocr:
+        cmd.append("--ocr")
     
     try:
-        # Scan starten und Output sammeln
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=300  # 5 Minuten Timeout
+            timeout=300
         )
         
-        # Suche die zuletzt erstellte PDF
+        # Find latest PDF
         pdf_files = glob.glob(f"{SCANS_DIR}/*.pdf")
         if pdf_files:
             latest_pdf = max(pdf_files, key=os.path.getctime)
             filename = os.path.basename(latest_pdf)
             
-            return jsonify({
-                'success': True,
-                'output': result.stdout,
-                'filename': filename,
-                'downloadUrl': f'/api/download/{filename}'
-            })
+            return ScanResponse(
+                success=True,
+                output=result.stdout,
+                filename=filename,
+                downloadUrl=f"/api/download/{filename}"
+            )
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Keine PDF erstellt',
-                'output': result.stdout + '\n' + result.stderr
-            }), 500
+            return ScanResponse(
+                success=False,
+                error="Keine PDF erstellt",
+                output=result.stdout + "\n" + result.stderr
+            )
             
     except subprocess.TimeoutExpired:
-        return jsonify({
-            'success': False,
-            'error': 'Scan-Timeout (>5min)'
-        }), 500
+        raise HTTPException(status_code=500, detail="Scan-Timeout")
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/api/scans', methods=['GET'])
-def list_scans():
-    """Liste alle vorhandenen Scans"""
+@app.get("/api/scans", response_model=list[ScanFile])
+async def list_scans():
+    """List all scanned PDFs"""
     try:
         pdf_files = glob.glob(f"{SCANS_DIR}/*.pdf")
         scans = []
         
-        for pdf in sorted(pdf_files, key=os.path.getctime, reverse=True)[:20]:
+        for pdf in sorted(pdf_files, key=os.path.getctime, reverse=True)[:50]:
             stat = os.stat(pdf)
-            scans.append({
-                'filename': os.path.basename(pdf),
-                'size': stat.st_size,
-                'created': datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
-                'downloadUrl': f'/api/download/{os.path.basename(pdf)}'
-            })
+            scans.append(ScanFile(
+                filename=os.path.basename(pdf),
+                size=stat.st_size,
+                created=datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
+                downloadUrl=f"/api/download/{os.path.basename(pdf)}"
+            ))
         
-        return jsonify(scans)
+        return scans
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/api/download/<filename>')
-def download_file(filename):
-    """Download einer gescannten PDF"""
+@app.get("/api/download/{filename}")
+async def download_file(filename: str):
+    """Download a scanned PDF"""
     filepath = os.path.join(SCANS_DIR, filename)
     
-    # Sicherheitscheck
+    # Security check
     if not os.path.abspath(filepath).startswith(os.path.abspath(SCANS_DIR)):
-        return "Access denied", 403
+        raise HTTPException(status_code=403, detail="Access denied")
     
-    if os.path.exists(filepath):
-        return send_file(filepath, as_attachment=True)
-    else:
-        return "File not found", 404
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(filepath, filename=filename, media_type="application/pdf")
 
-@app.route('/api/delete/<filename>', methods=['DELETE'])
-def delete_file(filename):
-    """Löscht eine gescannte PDF"""
+@app.delete("/api/delete/{filename}")
+async def delete_file(filename: str):
+    """Delete a scanned PDF"""
     filepath = os.path.join(SCANS_DIR, filename)
     
-    # Sicherheitscheck
+    # Security check
     if not os.path.abspath(filepath).startswith(os.path.abspath(SCANS_DIR)):
-        return jsonify({'error': 'Access denied'}), 403
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         if os.path.exists(filepath):
             os.remove(filepath)
-            return jsonify({'success': True})
+            return {"success": True}
         else:
-            return jsonify({'error': 'File not found'}), 404
+            raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
