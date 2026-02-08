@@ -803,9 +803,18 @@
         });
         
         async function loadScans() {
+            console.log('🔄 Loading scans...');
+            
             try {
                 const response = await fetch('/api/scans');
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const scans = await response.json();
+                console.log('📄 Loaded scans:', scans);
                 
                 if (scans.length === 0) {
                     scansList.innerHTML = `
@@ -817,30 +826,51 @@
                     return;
                 }
                 
-                scansList.innerHTML = scans.map(scan => `
-                    <div class="scan-item">
-                        <div class="scan-info">
-                            <div class="scan-name">${scan.filename}</div>
-                            <div class="scan-meta">${formatBytes(scan.size)} • ${scan.created}</div>
+                scansList.innerHTML = scans.map(scan => {
+                    console.log('  📄', scan.filename);
+                    return `
+                        <div class="scan-item">
+                            <div class="scan-info">
+                                <div class="scan-name">${escapeHtml(scan.filename)}</div>
+                                <div class="scan-meta">${formatBytes(scan.size)} • ${escapeHtml(scan.created)}</div>
+                            </div>
+                            <div class="scan-actions">
+                                <button class="btn-icon download" onclick="downloadFile('${escapeHtml(scan.filename)}')">
+                                    ⬇️
+                                </button>
+                                <button class="btn-icon delete" onclick="deleteScan('${escapeHtml(scan.filename)}')">
+                                    🗑️
+                                </button>
+                            </div>
                         </div>
-                        <div class="scan-actions">
-                            <button class="btn-icon download" onclick="window.location.href='${scan.downloadUrl}'">
-                                ⬇️
-                            </button>
-                            <button class="btn-icon delete" onclick="deleteScan('${scan.filename}')">
-                                🗑️
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+                
+                console.log('✅ Scans rendered');
+                
             } catch (error) {
+                console.error('❌ Error loading scans:', error);
                 scansList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">❌</div>
                         <div>Fehler beim Laden</div>
+                        <div style="font-size: 12px; margin-top: 8px; color: var(--error);">${error.message}</div>
                     </div>
                 `;
             }
+        }
+
+        // Helper für XSS-Schutz
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Download-Funktion
+        function downloadFile(filename) {
+            console.log('📥 Downloading:', filename);
+            window.location.href = `/api/download/${encodeURIComponent(filename)}`;
         }
         
         async function deleteScan(filename) {
