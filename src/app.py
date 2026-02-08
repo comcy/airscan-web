@@ -144,6 +144,34 @@ async def delete_file(filename: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/manifest.json")
+async def manifest():
+    """Serve PWA manifest"""
+    manifest_path = os.path.join(os.path.dirname(__file__), "manifest.json")
+    return FileResponse(manifest_path, media_type="application/json")
+
+@app.get("/service-worker.js")
+async def service_worker():
+    """Serve service worker"""
+    sw_path = os.path.join(os.path.dirname(__file__), "service-worker.js")
+    return FileResponse(sw_path, media_type="application/javascript")
+
+@app.get("/icon-{size}.png")
+async def icon(size: int):
+    """Serve PWA icons"""
+    icon_path = os.path.join(os.path.dirname(__file__), f"icon-{size}.png")
+    if os.path.exists(icon_path):
+        return FileResponse(icon_path, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Icon not found")
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon"""
+    favicon_path = os.path.join(os.path.dirname(__file__), "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/x-icon")
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
