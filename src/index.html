@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Scanner">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="HP OfficeJet Pro Scanner Webinterface">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <title>Scanner</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 16px;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 32px 20px;
+            }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 16px;
+            margin: -16px -16px 16px -16px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        @media (min-width: 768px) {
+            .header {
+                margin: -32px -20px 32px -20px;
+                padding: 32px;
+                border-radius: 0 0 24px 24px;
+            }
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        @media (min-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        /* Install Banner */
+        .install-banner {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .install-banner.show {
+            display: flex;
+        }
+        
+        .install-content {
+            flex: 1;
+        }
+        
+        .install-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .install-text {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .install-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-install {
+            background: white;
+            color: var(--success);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .btn-install:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-dismiss {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-dot.offline {
+            background: var(--error);
+            animation: none;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+        
+        @media (min-width: 768px) {
+            .card {
+                padding: 32px;
+                margin-bottom: 24px;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .option-card {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 60px;
+        }
+        
+        .option-card:active {
+            transform: scale(0.98);
+        }
+        
+        .option-card.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 24px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            touch-action: manipulation;
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .output {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            border-left: 4px solid var(--border);
+        }
+        
+        .output.show { display: block; }
+        .output.success { border-left-color: var(--success); color: var(--success); }
+        .output.error { border-left-color: var(--error); color: var(--error); }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+            font-size: 20px;
+            color: var(--text);
+        }
+        
+        .refresh-btn {
+            background: var(--bg);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:active {
+            transform: rotate(180deg);
+        }
+        
+        .scan-item {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .scan-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .scan-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 15px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .scan-meta {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .scan-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .btn-icon {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        
+        .btn-icon:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-icon.download {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-icon.delete {
+            background: var(--error);
+            border-color: var(--error);
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        .pull-hint {
+            text-align: center;
+            padding: 12px;
+            color: var(--text-light);
+            font-size: 14px;
+            background: var(--bg);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        @media (max-width: 767px) {
+            .pull-hint {
+                display: block;
+            }
+        }
+
+        /* Update available toast */
+        .update-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            max-width: 90%;
+        }
+
+        .update-toast.show {
+            display: flex;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .btn-update {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Install Banner -->
+        <div class="install-banner" id="installBanner">
+            <div class="install-content">
+                <div class="install-title">📱 Als App installieren</div>
+                <div class="install-text">Schneller Zugriff vom Homescreen</div>
+            </div>
+            <div class="install-actions">
+                <button class="btn-install" id="installBtn">Installieren</button>
+                <button class="btn-dismiss" id="dismissBtn">✕</button>
+            </div>
+        </div>
+        
+        <div class="header">
+            <h1>🖨️ Scanner</h1>
+            <p>HP OfficeJet Pro 8120e series</p>
+            <div class="status-badge">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Online</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <form id="scanForm">
+                <div class="form-group">
+                    <label for="name">📝 Dateiname</label>
+                    <input type="text" id="name" name="name" placeholder="scan" value="scan">
+                </div>
+                
+                <div class="form-group">
+                    <label for="resolution">🎯 Auflösung</label>
+                    <select id="resolution" name="resolution">
+                        <option value="75">75 DPI (Entwurf)</option>
+                        <option value="150" selected>150 DPI (Standard)</option>
+                        <option value="300">300 DPI (Hoch)</option>
+                        <option value="600">600 DPI (Foto)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mode">🎨 Modus</label>
+                    <select id="mode" name="mode">
+                        <option value="color" selected>Farbe</option>
+                        <option value="gray">Graustufen</option>
+                        <option value="lineart">Schwarz-Weiß</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="source">📄 Quelle</label>
+                    <select id="source" name="source">
+                        <option value="adf" selected>Automatischer Einzug</option>
+                        <option value="flatbed">Flachbett</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>⚙️ Optionen</label>
+                    <div class="options-grid">
+                        <div class="option-card active" data-option="compress">
+                            <input type="checkbox" id="compress" name="compress" checked>
+                            <label for="compress" style="margin: 0; font-weight: 500; cursor: pointer;">Komprimieren</label>
+                        </div>
+                        <div class="option-card" data-option="ocr">
+                            <input type="checkbox" id="ocr" name="ocr">
+                            <label for="ocr" style="margin: 0; font-weight: 500; cursor: pointer;">OCR</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="scanBtn">
+                    🚀 Scan starten
+                </button>
+            </form>
+            
+            <div class="output" id="output"></div>
+        </div>
+        
+        <div class="card">
+            <div class="section-header">
+                <h2>📂 Scans</h2>
+                <button class="refresh-btn" onclick="loadScans()">🔄</button>
+            </div>
+            <div class="pull-hint">↓ Nach unten ziehen zum Aktualisieren</div>
+            <div id="scansList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <div>Lade...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Toast -->
+    <div class="update-toast" id="updateToast">
+        <span>🎉 Update verfügbar!</span>
+        <button class="btn-update" onclick="updateApp()">Aktualisieren</button>
+    </div>
+    
+    <script>
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const dismissBtn = document.getElementById('dismissBtn');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install banner if not dismissed before
+            if (!localStorage.getItem('installDismissed')) {
+                installBanner.classList.add('show');
+            }
+        });
+        
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('PWA installed');
+                }
+                
+                deferredPrompt = null;
+                installBanner.classList.remove('show');
+            }
+        });
+        
+        dismissBtn.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+            localStorage.setItem('installDismissed', 'true');
+        });
+        
+        // Check if already installed
+        window.addEventListener('appinstalled', () => {
+            installBanner.classList.remove('show');
+            console.log('PWA installed successfully');
+        });
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then((registration) => {
+                    console.log('Service Worker registered:', registration);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New service worker available
+                                document.getElementById('updateToast').classList.add('show');
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+        
+        function updateApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then((registration) => {
+                    if (registration && registration.waiting) {
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+                
+                window.location.reload();
+            }
+        }
+        
+        // Online/Offline Status
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                statusDot.classList.remove('offline');
+                statusText.textContent = 'Online';
+            } else {
+                statusDot.classList.add('offline');
+                statusText.textContent = 'Offline';
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+        
+        // Option cards toggle
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                }
+                card.classList.toggle('active', card.querySelector('input').checked);
+            });
+        });
+        
+        const form = document.getElementById('scanForm');
+        const output = document.getElementById('output');
+        const scanBtn = document.getElementById('scanBtn');
+        const scansList = document.getElementById('scansList');
+        
+        loadScans();
+        
+        // Pull to refresh
+        let startY = 0;
+        let pullDistance = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            if (window.scrollY === 0) {
+                startY = e.touches[0].pageY;
+            }
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (startY > 0) {
+                pullDistance = e.touches[0].pageY - startY;
+                if (pullDistance > 80) {
+                    loadScans();
+                    startY = 0;
+                }
+            }
+        });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value || 'scan',
+                resolution: parseInt(document.getElementById('resolution').value),
+                mode: document.getElementById('mode').value,
+                source: document.getElementById('source').value,
+                compress: document.getElementById('compress').checked,
+                ocr: document.getElementById('ocr').checked
+            };
+            
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<span class="spinner"></span> Scanne...';
+            output.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                output.classList.add('show');
+                
+                if (result.success) {
+                    output.className = 'output show success';
+                    output.textContent = result.output + '\n\n✅ PDF: ' + result.filename;
+                    loadScans();
+                    
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+                    
+                    setTimeout(() => {
+                        if (confirm('Jetzt herunterladen?')) {
+                            window.location.href = result.downloadUrl;
+                        }
+                    }, 500);
+                } else {
+                    output.className = 'output show error';
+                    output.textContent = '❌ ' + (result.error || result.output);
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
+                }
+            } catch (error) {
+                output.classList.add('show');
+                output.className = 'output show error';
+                output.textContent = '❌ ' + error.message;
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '🚀 Scan starten';
+            }
+        });
+        
+        async function loadScans() {
+            try {
+                const response = await fetch('/api/scans');
+                const scans = await response.json();
+                
+                if (scans.length === 0) {
+                    scansList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div>Keine Scans vorhanden</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                scansList.innerHTML = scans.map(scan => `
+                    <div class="scan-item">
+                        <div class="scan-info">
+                            <div class="scan-name">${scan.filename}</div>
+                            <div class="scan-meta">${formatBytes(scan.size)} • ${scan.created}</div>
+                        </div>
+                        <div class="scan-actions">
+                            <button class="btn-icon download" onclick="window.location.href='${scan.downloadUrl}'">
+                                ⬇️
+                            </button>
+                            <button class="btn-icon delete" onclick="deleteScan('${scan.filename}')">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                scansList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div>Fehler beim Laden</div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function deleteScan(filename) {
+            if (!confirm(`"${filename}" löschen?`)) return;
+            
+            try {
+                const response = await fetch(`/api/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadScans();
+                    if (navigator.vibrate) navigator.vibrate(100);
+                }
+            } catch (error) {
+                alert('Fehler:
