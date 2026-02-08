@@ -2,40 +2,100 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Webinterface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Scanner</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
         
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 100%;
+            padding: 16px;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 32px 20px;
+            }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 16px;
+            margin: -16px -16px 16px -16px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        @media (min-width: 768px) {
+            .header {
+                margin: -32px -20px 32px -20px;
+                padding: 32px;
+                border-radius: 0 0 24px 24px;
+            }
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        @media (min-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
         }
         
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
         }
         
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
+        @media (min-width: 768px) {
+            .card {
+                padding: 32px;
+                margin-bottom: 24px;
+            }
         }
         
         .form-group {
@@ -45,60 +105,84 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
         }
         
         input[type="text"],
         select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            transition: all 0.2s;
+            background: var(--card-bg);
+            color: var(--text);
         }
         
         input[type="text"]:focus,
         select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
         
-        .checkbox-item {
+        .option-card {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            min-height: 60px;
+        }
+        
+        .option-card:active {
+            transform: scale(0.98);
+        }
+        
+        .option-card.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
         }
         
         input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
+            accent-color: var(--primary);
         }
         
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 18px 24px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
             width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            touch-action: manipulation;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
         
         .btn:disabled {
@@ -107,116 +191,182 @@
             transform: none;
         }
         
-        .output {
-            background: #f5f5f5;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .output.show { display: block; }
-        
-        .success { color: #10b981; }
-        .error { color: #ef4444; }
-        
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
         }
-        
-        .spinner.show { display: block; }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
-        .scans-list {
-            margin-top: 20px;
+        .output {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            border-left: 4px solid var(--border);
         }
         
-        .scan-item {
+        .output.show { display: block; }
+        .output.success { border-left-color: var(--success); color: var(--success); }
+        .output.error { border-left-color: var(--error); color: var(--error); }
+        
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            background: #f9fafb;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 {
+            font-size: 20px;
+            color: var(--text);
+        }
+        
+        .refresh-btn {
+            background: var(--bg);
+            border: none;
+            padding: 8px 12px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:active {
+            transform: rotate(180deg);
+        }
+        
+        .scan-item {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
         }
         
         .scan-info {
             flex: 1;
+            min-width: 0;
         }
         
         .scan-name {
             font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
+            color: var(--text);
+            font-size: 15px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .scan-meta {
-            font-size: 14px;
-            color: #666;
+            font-size: 13px;
+            color: var(--text-light);
         }
         
         .scan-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            flex-shrink: 0;
         }
         
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: none;
+        .btn-icon {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
             cursor: pointer;
-            font-weight: 500;
             transition: all 0.2s;
+            touch-action: manipulation;
         }
         
-        .btn-download {
-            background: #667eea;
+        .btn-icon:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-icon.download {
+            background: var(--primary);
+            border-color: var(--primary);
             color: white;
         }
         
-        .btn-delete {
-            background: #ef4444;
+        .btn-icon.delete {
+            background: var(--error);
+            border-color: var(--error);
             color: white;
         }
         
-        .btn-small:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        /* Pull to refresh hint */
+        .pull-hint {
+            text-align: center;
+            padding: 12px;
+            color: var(--text-light);
+            font-size: 14px;
+            background: var(--bg);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        @media (max-width: 767px) {
+            .pull-hint {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="header">
+            <h1>🖨️ Scanner</h1>
+            <p>HP OfficeJet Pro 8120e series</p>
+        </div>
+        
         <div class="card">
-            <h1>🖨️ Scanner Webinterface</h1>
-            <p class="subtitle">HP OfficeJet Pro 8120e series</p>
-            
             <form id="scanForm">
                 <div class="form-group">
-                    <label for="name">Dateiname</label>
-                    <input type="text" id="name" name="name" placeholder="z.B. rechnung, dokument, foto..." value="scan">
+                    <label for="name">📝 Dateiname</label>
+                    <input type="text" id="name" name="name" placeholder="scan" value="scan">
                 </div>
                 
                 <div class="form-group">
-                    <label for="resolution">Auflösung</label>
+                    <label for="resolution">🎯 Auflösung</label>
                     <select id="resolution" name="resolution">
                         <option value="75">75 DPI (Entwurf)</option>
                         <option value="150" selected>150 DPI (Standard)</option>
@@ -226,7 +376,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="mode">Modus</label>
+                    <label for="mode">🎨 Modus</label>
                     <select id="mode" name="mode">
                         <option value="color" selected>Farbe</option>
                         <option value="gray">Graustufen</option>
@@ -235,23 +385,23 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="source">Quelle</label>
+                    <label for="source">📄 Quelle</label>
                     <select id="source" name="source">
-                        <option value="adf" selected>Automatischer Einzug (ADF)</option>
+                        <option value="adf" selected>Automatischer Einzug</option>
                         <option value="flatbed">Flachbett</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label>Optionen</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
+                    <label>⚙️ Optionen</label>
+                    <div class="options-grid">
+                        <div class="option-card active" data-option="compress">
                             <input type="checkbox" id="compress" name="compress" checked>
-                            <label for="compress" style="margin: 0;">PDF komprimieren</label>
+                            <label for="compress" style="margin: 0; font-weight: 500; cursor: pointer;">Komprimieren</label>
                         </div>
-                        <div class="checkbox-item">
+                        <div class="option-card" data-option="ocr">
                             <input type="checkbox" id="ocr" name="ocr">
-                            <label for="ocr" style="margin: 0;">OCR aktivieren</label>
+                            <label for="ocr" style="margin: 0; font-weight: 500; cursor: pointer;">OCR</label>
                         </div>
                     </div>
                 </div>
@@ -261,27 +411,62 @@
                 </button>
             </form>
             
-            <div class="spinner" id="spinner"></div>
             <div class="output" id="output"></div>
         </div>
         
         <div class="card">
-            <h2>📂 Letzte Scans</h2>
-            <div class="scans-list" id="scansList">
-                <p style="color: #666; text-align: center;">Lade Scans...</p>
+            <div class="section-header">
+                <h2>📂 Scans</h2>
+                <button class="refresh-btn" onclick="loadScans()">🔄</button>
+            </div>
+            <div class="pull-hint">↓ Nach unten ziehen zum Aktualisieren</div>
+            <div id="scansList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <div>Lade...</div>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
+        // Option cards toggle
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                }
+                card.classList.toggle('active', card.querySelector('input').checked);
+            });
+        });
+        
         const form = document.getElementById('scanForm');
         const output = document.getElementById('output');
-        const spinner = document.getElementById('spinner');
         const scanBtn = document.getElementById('scanBtn');
         const scansList = document.getElementById('scansList');
         
-        // Lade Scan-Liste beim Start
         loadScans();
+        
+        // Pull to refresh
+        let startY = 0;
+        let pullDistance = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            if (window.scrollY === 0) {
+                startY = e.touches[0].pageY;
+            }
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (startY > 0) {
+                pullDistance = e.touches[0].pageY - startY;
+                if (pullDistance > 80) {
+                    loadScans();
+                    startY = 0;
+                }
+            }
+        });
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -295,10 +480,8 @@
                 ocr: document.getElementById('ocr').checked
             };
             
-            // UI aktualisieren
             scanBtn.disabled = true;
-            scanBtn.textContent = '⏳ Scanne...';
-            spinner.classList.add('show');
+            scanBtn.innerHTML = '<span class="spinner"></span> Scanne...';
             output.classList.remove('show');
             
             try {
@@ -310,34 +493,37 @@
                 
                 const result = await response.json();
                 
-                spinner.classList.remove('show');
                 output.classList.add('show');
                 
                 if (result.success) {
                     output.className = 'output show success';
-                    output.textContent = result.output + '\n\n✅ PDF erstellt: ' + result.filename;
-                    
-                    // Scan-Liste aktualisieren
+                    output.textContent = result.output + '\n\n✅ PDF: ' + result.filename;
                     loadScans();
                     
-                    // Download-Link anbieten
+                    // Vibration feedback (mobile)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+                    
                     setTimeout(() => {
-                        if (confirm('Scan erfolgreich! Jetzt herunterladen?')) {
+                        if (confirm('Jetzt herunterladen?')) {
                             window.location.href = result.downloadUrl;
                         }
                     }, 500);
                 } else {
                     output.className = 'output show error';
-                    output.textContent = '❌ Fehler:\n' + (result.error || result.output);
+                    output.textContent = '❌ ' + (result.error || result.output);
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
                 }
             } catch (error) {
-                spinner.classList.remove('show');
                 output.classList.add('show');
                 output.className = 'output show error';
-                output.textContent = '❌ Verbindungsfehler:\n' + error.message;
+                output.textContent = '❌ ' + error.message;
             } finally {
                 scanBtn.disabled = false;
-                scanBtn.textContent = '🚀 Scan starten';
+                scanBtn.innerHTML = '🚀 Scan starten';
             }
         });
         
@@ -347,37 +533,43 @@
                 const scans = await response.json();
                 
                 if (scans.length === 0) {
-                    scansList.innerHTML = '<p style="color: #666; text-align: center;">Keine Scans vorhanden</p>';
+                    scansList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div>Keine Scans vorhanden</div>
+                        </div>
+                    `;
                     return;
                 }
                 
                 scansList.innerHTML = scans.map(scan => `
                     <div class="scan-item">
                         <div class="scan-info">
-                            <div class="scan-name">📄 ${scan.filename}</div>
+                            <div class="scan-name">${scan.filename}</div>
                             <div class="scan-meta">${formatBytes(scan.size)} • ${scan.created}</div>
                         </div>
                         <div class="scan-actions">
-                            <button class="btn-small btn-download" onclick="downloadScan('${scan.downloadUrl}')">
-                                ⬇️ Download
+                            <button class="btn-icon download" onclick="window.location.href='${scan.downloadUrl}'">
+                                ⬇️
                             </button>
-                            <button class="btn-small btn-delete" onclick="deleteScan('${scan.filename}')">
-                                🗑️ Löschen
+                            <button class="btn-icon delete" onclick="deleteScan('${scan.filename}')">
+                                🗑️
                             </button>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
-                scansList.innerHTML = '<p style="color: #ef4444;">Fehler beim Laden der Scans</p>';
+                scansList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div>Fehler beim Laden</div>
+                    </div>
+                `;
             }
         }
         
-        function downloadScan(url) {
-            window.location.href = url;
-        }
-        
         async function deleteScan(filename) {
-            if (!confirm(`"${filename}" wirklich löschen?`)) return;
+            if (!confirm(`"${filename}" löschen?`)) return;
             
             try {
                 const response = await fetch(`/api/delete/${filename}`, {
@@ -386,11 +578,10 @@
                 
                 if (response.ok) {
                     loadScans();
-                } else {
-                    alert('Fehler beim Löschen');
+                    if (navigator.vibrate) navigator.vibrate(100);
                 }
             } catch (error) {
-                alert('Verbindungsfehler: ' + error.message);
+                alert('Fehler: ' + error.message);
             }
         }
         
