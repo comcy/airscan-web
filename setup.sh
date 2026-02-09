@@ -57,12 +57,37 @@ if [[ ! $REPLY =~ ^[JjYy]$ ]] && [[ ! -z $REPLY ]]; then
     exit 0
 fi
 
-# 1. System-Abhängigkeiten prüfen und installieren
+# 1. Alte Installation aufräumen (falls vorhanden)
+echo ""
+echo "🧹 Räume alte Installation auf..."
+
+# Service stoppen (falls läuft)
+if systemctl is-active --quiet scan-web 2>/dev/null; then
+    echo "   Stoppe alten Service..."
+    sudo systemctl stop scan-web
+fi
+
+# Alte Dateien mit falschen Berechtigungen entfernen
+if [[ -f "$SCAN_SCRIPT_TARGET" ]]; then
+    echo "   Entferne altes Scan-Skript..."
+    sudo rm -f "$SCAN_SCRIPT_TARGET"
+fi
+
+if [[ -d "$INSTALL_DIR" ]]; then
+    # Prüfe Besitzer
+    OWNER=$(stat -c '%U' "$INSTALL_DIR" 2>/dev/null || echo "unknown")
+    if [[ "$OWNER" != "$CURRENT_USER" ]]; then
+        echo "   Entferne Install-Dir mit falschen Berechtigungen (Besitzer: $OWNER)..."
+        sudo rm -rf "$INSTALL_DIR"
+    fi
+fi
+
+# 2. System-Abhängigkeiten prüfen und installieren
 echo ""
 echo "📦 Prüfe System-Abhängigkeiten..."
 MISSING_PACKAGES=()
 
-for pkg in python3 python3-pip python3-venv; do
+for pkg in python3 python3-pip python3-venv python3-pil; do
     if ! dpkg -l | grep -q "^ii  $pkg "; then
         MISSING_PACKAGES+=($pkg)
     fi
@@ -75,44 +100,46 @@ if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     sudo apt install -y "${MISSING_PACKAGES[@]}"
 fi
 
-# Prüfe ob Pillow-Dependencies vorhanden sind
-if ! dpkg -l | grep -q "^ii  python3-pil"; then
-    sudo apt install -y python3-pil
-fi
-
 echo -e "${GREEN}✅ System-Abhängigkeiten OK${NC}"
 
-# 2. Scan-Skript kopieren (falls vorhanden)
+# 3. Scan-Skript kopieren (falls vorhanden)
 if [[ -f "$SCAN_SCRIPT_SOURCE" ]]; then
     echo ""
     echo "📄 Kopiere Scan-Skript..."
     cp "$SCAN_SCRIPT_SOURCE" "$SCAN_SCRIPT_TARGET"
     chmod +x "$SCAN_SCRIPT_TARGET"
+    chown "$CURRENT_USER:$CURRENT_USER" "$SCAN_SCRIPT_TARGET"
     echo -e "${GREEN}✅ Scan-Skript installiert: $SCAN_SCRIPT_TARGET${NC}"
 else
     echo ""
     echo -e "${YELLOW}⚠️  Scan-Skript nicht im Repo gefunden${NC}"
     if [[ ! -f "$SCAN_SCRIPT_TARGET" ]]; then
         echo -e "${RED}❌ Kein Scan-Skript unter $SCAN_SCRIPT_TARGET gefunden!${NC}"
-        echo "   Bitte erstelle das Scan-Skript manuell."
-        exit 1
+        echo "   Bitte erstelle das Scan-Skript manuell oder lege es unter scripts/airscan.sh ab."
+        read -p "Trotzdem fortfahren? [j/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[JjYy]$ ]]; then
+            exit 1
+        fi
     else
         echo -e "${GREEN}✅ Vorhandenes Scan-Skript wird verwendet: $SCAN_SCRIPT_TARGET${NC}"
     fi
 fi
 
-# 3. Installations-Verzeichnis vorbereiten
+# 4. Installations-Verzeichnis vorbereiten
 echo ""
 echo "📁 Erstelle Installations-Verzeichnis..."
 mkdir -p "$INSTALL_DIR"
+chown "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
 
-# 4. Dateien kopieren
+# 5. Dateien kopieren
 echo ""
 echo "📋 Kopiere App-Dateien..."
 cp -r "$SCRIPT_DIR/src/"* "$INSTALL_DIR/"
+chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
 echo -e "${GREEN}✅ Dateien kopiert${NC}"
 
-# 5. Python Virtual Environment erstellen
+# 6. Python Virtual Environment erstellen
 echo ""
 echo "🐍 Erstelle Python Virtual Environment..."
 cd "$INSTALL_DIR"
@@ -125,7 +152,7 @@ fi
 python3 -m venv venv
 source venv/bin/activate
 
-# 6. Python-Pakete installieren
+# 7. Python-Pakete installieren
 echo ""
 echo "📦 Installiere Python-Pakete..."
 if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
@@ -137,7 +164,7 @@ else
 fi
 echo -e "${GREEN}✅ Python-Pakete installiert${NC}"
 
-# 7. Icons generieren
+# 8. Icons generieren
 echo ""
 echo "🎨 Generiere PWA Icons..."
 if [[ -f "$INSTALL_DIR/generate-icons.py" ]]; then
@@ -149,7 +176,14 @@ fi
 
 deactivate
 
-# 8. Systemd Service erstellen
+# 9. Scans-Verzeichnis erstellen
+echo ""
+echo "📁 Erstelle Scans-Verzeichnis..."
+mkdir -p "$HOME_DIR/scans"
+chown "$CURRENT_USER:$CURRENT_USER" "$HOME_DIR/scans"
+echo -e "${GREEN}✅ Scans-Verzeichnis erstellt: $HOME_DIR/scans${NC}"
+
+# 10. Systemd Service erstellen
 echo ""
 echo "⚙️  Erstelle Systemd Service..."
 
@@ -161,11 +195,13 @@ After=network.target
 [Service]
 Type=simple
 User=$CURRENT_USER
+Group=$CURRENT_USER
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port $SERVICE_PORT
 Restart=always
 RestartSec=10
 Environment="PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin"
+Environment="HOME=$HOME_DIR"
 
 [Install]
 WantedBy=multi-user.target
@@ -173,7 +209,7 @@ EOFSERVICE
 
 echo -e "${GREEN}✅ Service-Datei erstellt${NC}"
 
-# 9. Service aktivieren und starten
+# 11. Service aktivieren und starten
 echo ""
 echo "🚀 Starte Service..."
 sudo systemctl daemon-reload
@@ -189,11 +225,13 @@ else
     echo -e "${RED}❌ Service-Start fehlgeschlagen${NC}"
     echo ""
     echo "Fehler-Logs:"
-    sudo journalctl -u scan-web -n 20 --no-pager
+    sudo journalctl -u scan-web -n 30 --no-pager
+    echo ""
+    echo -e "${YELLOW}Tipp: Prüfe die Logs mit: sudo journalctl -u scan-web -f${NC}"
     exit 1
 fi
 
-# 10. Netzwerk-Informationen
+# 12. Netzwerk-Informationen
 echo ""
 IP_ADDR=$(hostname -I | awk '{print $1}')
 HOSTNAME=$(hostname)
@@ -209,13 +247,23 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo -e "   ${GREEN}Lokal:${NC}        http://localhost:$SERVICE_PORT"
 echo -e "   ${GREEN}Netzwerk:${NC}     http://$IP_ADDR:$SERVICE_PORT"
-echo -e "   ${GREEN}Hostname:${NC}     http://$HOSTNAME.local:$SERVICE_PORT"
+if [[ -n "$HOSTNAME" ]]; then
+    echo -e "   ${GREEN}Hostname:${NC}     http://$HOSTNAME.local:$SERVICE_PORT"
+fi
 echo ""
-echo "💡 PWA Installation:"
+echo "💡 PWA Installation (nur über HTTPS):"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   1. Öffne eine der URLs oben im Browser"
-echo "   2. Klicke auf 'Installieren' im grünen Banner"
-echo "   3. Die App erscheint auf deinem Homescreen"
+echo "   Für PWA-Installation über HTTPS nutze einen Tunnel:"
+echo ""
+echo "   # Option 1: Cloudflare Tunnel (kostenlos)"
+echo "   sudo snap install cloudflared"
+echo "   cloudflared tunnel --url http://localhost:$SERVICE_PORT"
+echo ""
+echo "   # Option 2: ngrok"
+echo "   curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null"
+echo "   echo 'deb https://ngrok-agent.s3.amazonaws.com buster main' | sudo tee /etc/apt/sources.list.d/ngrok.list"
+echo "   sudo apt update && sudo apt install ngrok"
+echo "   ngrok http $SERVICE_PORT"
 echo ""
 echo "📋 Nützliche Befehle:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -231,10 +279,15 @@ echo "   Scan-Skript:      $SCAN_SCRIPT_TARGET"
 echo "   Systemd-Service:  /etc/systemd/system/scan-web.service"
 echo "   Scan-Ausgabe:     $HOME_DIR/scans/"
 echo ""
-echo "🔧 Konfiguration anpassen:"
+echo "🔧 Erste Schritte:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   Scanner-Device:   $SCAN_SCRIPT_TARGET (Zeile mit DEVICE_URI)"
-echo "   Port ändern:      /etc/systemd/system/scan-web.service"
+echo "   1. Öffne http://localhost:$SERVICE_PORT im Browser"
+echo "   2. Drücke F12 für Developer Console"
+echo "   3. Prüfe ob Scans angezeigt werden"
+echo ""
+echo "   Falls Scans nicht angezeigt werden:"
+echo "   - Prüfe Browser-Console auf Fehler (F12)"
+echo "   - Teste die API: curl http://localhost:$SERVICE_PORT/api/scans"
 echo ""
 echo -e "${GREEN}Viel Erfolg mit deinem Scanner! 🖨️${NC}"
 echo ""
