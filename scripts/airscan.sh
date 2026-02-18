@@ -33,6 +33,7 @@ while [[ $# -gt 0 ]]; do
     -m|--mode) MODE="$2"; shift 2 ;;
     --flatbed) SOURCE="flatbed"; shift ;;
     --adf) SOURCE="adf"; shift ;;
+    --source=*) SOURCE="${1#*=}"; shift ;;
     --no-compress) COMPRESS=false; shift ;;
     --ocr) OCR=true; shift ;;
     -h|--help) 

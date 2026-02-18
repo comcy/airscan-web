@@ -20,9 +20,6 @@ APP_DIR = Path(__file__).parent.absolute()
 # Stelle sicher, dass Verzeichnis existiert
 os.makedirs(SCANS_DIR, exist_ok=True)
 
-print(f"📂 APP_DIR: {APP_DIR}")
-print(f"📂 SCANS_DIR: {SCANS_DIR}")
-
 class ScanRequest(BaseModel):
     name: Optional[str] = "scan"
     resolution: int = 150
@@ -56,91 +53,22 @@ async def get_status():
     scanner_name = None
     
     try:
-        # Increased timeout to 10s for network discovery
+        # Check using scanimage -L
         result = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=10)
-        if "HP" in result.stdout or "OfficeJet" in result.stdout or "airscan" in result.stdout:
+        if any(keyword in result.stdout for keyword in ["HP", "OfficeJet", "airscan"]):
             scanner_online = True
             for line in result.stdout.splitlines():
                 if "HP" in line or "OfficeJet" in line:
-                    scanner_name = line.split("is a")[-1].strip() if "is a" in line else "HP Scanner"
+                    scanner_name = line.split("is a")[-1].strip() if "is a" in line else "Scanner"
                     break
-    except subprocess.TimeoutExpired:
-        print("⚠️ Scanner status check timed out")
-        # If it times out, we don't know for sure, but we keep it offline to be safe
     except Exception as e:
-        print(f"⚠️ Error checking scanner status: {e}")
+        print(f"⚠️ Status check error: {e}")
 
     return StatusResponse(
         service=True,
         scanner=scanner_online,
         scanner_name=scanner_name
     )
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    """Serve the web interface"""
-    html_path = APP_DIR / "index.html"
-    print(f"📄 Loading HTML from: {html_path}")
-    
-    if not html_path.exists():
-        raise HTTPException(status_code=500, detail=f"index.html not found at {html_path}")
-    
-    with open(html_path, "r", encoding="utf-8") as f:
-        return f.read()
-
-@app.post("/api/scan", response_model=ScanResponse)
-async def start_scan(request: ScanRequest):
-    """Start a scan job"""
-    print(f"🚀 Starting scan: {request.name}")
-    
-    if not os.path.exists(SCAN_SCRIPT):
-        return ScanResponse(
-            success=False,
-            error=f"Scan-Skript nicht gefunden: {SCAN_SCRIPT}"
-        )
-    
-    cmd = [SCAN_SCRIPT, "-n", request.name]
-    cmd.extend(["-r", str(request.resolution)])
-    cmd.extend(["-m", request.mode])
-    
-    if request.source == "flatbed":
-        cmd.append("--flatbed")
-    else:
-        cmd.append("--adf")
-    
-    if not request.compress:
-        cmd.append("--no-compress")
-    
-    if request.ocr:
-        cmd.append("--ocr")
-    
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        
-        # Find latest PDF
-        pdf_files = glob.glob(os.path.join(SCANS_DIR, "*.pdf"))
-        
-        if pdf_files:
-            latest_pdf = max(pdf_files, key=os.path.getctime)
-            filename = os.path.basename(latest_pdf)
-            
-            return ScanResponse(
-                success=True,
-                output=result.stdout,
-                filename=filename,
-                downloadUrl=f"/api/download/{filename}"
-            )
-        else:
-            return ScanResponse(
-                success=False,
-                error="Keine PDF erstellt",
-                output=result.stdout + "\n" + result.stderr
-            )
-            
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=500, detail="Scan-Timeout")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/scans", response_model=list[ScanFile])
 async def list_scans():
@@ -150,56 +78,78 @@ async def list_scans():
         scans = []
         
         for pdf in sorted(pdf_files, key=os.path.getctime, reverse=True)[:50]:
-            stat = os.stat(pdf)
-            scans.append(ScanFile(
-                filename=os.path.basename(pdf),
-                size=stat.st_size,
-                created=datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
-                downloadUrl=f"/api/download/{os.path.basename(pdf)}"
-            ))
+            try:
+                stat = os.stat(pdf)
+                fname = os.path.basename(pdf)
+                scans.append(ScanFile(
+                    filename=fname,
+                    size=stat.st_size,
+                    created=datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
+                    downloadUrl=f"/api/download/{fname}"
+                ))
+            except: continue
         
         return scans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/scan", response_model=ScanResponse)
+async def start_scan(request: ScanRequest):
+    """Start a scan job"""
+    if not os.path.exists(SCAN_SCRIPT):
+        return ScanResponse(success=False, error="Scan-Skript nicht gefunden")
+    
+    cmd = [SCAN_SCRIPT, "-n", request.name, "-r", str(request.resolution), "-m", request.mode]
+    
+    # Matching the new airscan.sh parameters
+    if request.source == "flatbed":
+        cmd.append("--flatbed") 
+    else:
+        cmd.append("--adf")
+    
+    if not request.compress: cmd.append("--no-compress")
+    if request.ocr: cmd.append("--ocr")
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         
+        pdf_files = glob.glob(os.path.join(SCANS_DIR, "*.pdf"))
+        if pdf_files:
+            latest_pdf = max(pdf_files, key=os.path.getctime)
+            filename = os.path.basename(latest_pdf)
+            return ScanResponse(
+                success=True,
+                output=result.stdout,
+                filename=filename,
+                downloadUrl=f"/api/download/{filename}"
+            )
+        return ScanResponse(success=False, error="Keine PDF erstellt", output=result.stderr)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/download/{filename}")
 async def download_file(filename: str):
-    """Download a scanned PDF"""
     filepath = os.path.join(SCANS_DIR, filename)
-    
-    # Security check
-    if not os.path.abspath(filepath).startswith(os.path.abspath(SCANS_DIR)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="File not found")
-    
+    if not os.path.exists(filepath): raise HTTPException(status_code=404)
     return FileResponse(filepath, filename=filename, media_type="application/pdf")
 
 @app.delete("/api/delete/{filename}")
 async def delete_file(filename: str):
-    """Delete a scanned PDF"""
     filepath = os.path.join(SCANS_DIR, filename)
-    
-    # Security check
-    if not os.path.abspath(filepath).startswith(os.path.abspath(SCANS_DIR)):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    try:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            return {"success": True}
-        else:
-            raise HTTPException(status_code=404, detail="File not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        return {"success": True}
+    raise HTTPException(status_code=404)
 
-# Mount static files LAST (after all routes)
-# This serves manifest.json, service-worker.js, icons, etc.
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    html_path = APP_DIR / "index.html"
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+# Serve other static files
 app.mount("/", StaticFiles(directory=str(APP_DIR), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting Scanner Web Interface...")
     uvicorn.run(app, host="0.0.0.0", port=5000)
