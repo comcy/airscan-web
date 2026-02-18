@@ -702,53 +702,51 @@
                 });
                 window.location.reload();
             }
-        });
+        }
         
-                // Online/Offline Status
-                const serviceStatusDot = document.getElementById('serviceStatusDot');
-                const serviceStatusText = document.getElementById('serviceStatusText');
-                const scannerStatusDot = document.getElementById('scannerStatusDot');
-                const scannerStatusText = document.getElementById('scannerStatusText');
-                
-                async function updateSystemStatus() {
-                    if (!navigator.onLine) {
-                        serviceStatusDot.classList.add('offline');
-                        serviceStatusText.textContent = 'Browser: Offline';
-                        scannerStatusDot.classList.add('offline');
-                        scannerStatusText.textContent = 'Scanner: -';
-                        return;
-                    }
+        // Online/Offline Status
+        const serviceStatusDot = document.getElementById('serviceStatusDot');
+        const serviceStatusText = document.getElementById('serviceStatusText');
+        const scannerStatusDot = document.getElementById('scannerStatusDot');
+        const scannerStatusText = document.getElementById('scannerStatusText');
         
-                    try {
-                        const response = await fetch('/api/status');
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            // Service Status
-                            serviceStatusDot.classList.remove('offline');
-                            serviceStatusText.textContent = 'Dienst: Online';
-                            
-                            // Scanner Status
-                            if (data.scanner) {
-                                scannerStatusDot.classList.remove('offline');
-                                scannerStatusDot.classList.remove('searching');
-                                scannerStatusText.textContent = 'Scanner: Bereit';
-                            } else {
-                                scannerStatusDot.classList.add('offline');
-                                scannerStatusDot.classList.remove('searching');
-                                scannerStatusText.textContent = 'Scanner: Offline';
-                            }
-                        } else {
-                            throw new Error('Server error');
-                        }
-                    } catch (error) {
-                        serviceStatusDot.classList.add('offline');
-                        serviceStatusText.textContent = 'Dienst: Offline';
+        async function updateSystemStatus() {
+            if (!navigator.onLine) {
+                serviceStatusDot.classList.add('offline');
+                serviceStatusText.textContent = 'Browser: Offline';
+                scannerStatusDot.classList.add('offline');
+                scannerStatusText.textContent = 'Scanner: -';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Service Status
+                    serviceStatusDot.classList.remove('offline');
+                    serviceStatusText.textContent = 'Dienst: Online';
+                    
+                    // Scanner Status
+                    if (data.scanner) {
+                        scannerStatusDot.classList.remove('offline');
+                        scannerStatusDot.classList.remove('searching');
+                        scannerStatusText.textContent = 'Scanner: Bereit';
+                    } else {
                         scannerStatusDot.classList.add('offline');
-                        scannerStatusText.textContent = 'Scanner: -';
+                        scannerStatusDot.classList.remove('searching');
+                        scannerStatusText.textContent = 'Scanner: Offline';
                     }
+                } else {
+                    throw new Error('Server error');
                 }
-        
+            } catch (error) {
+                serviceStatusDot.classList.add('offline');
+                serviceStatusText.textContent = 'Dienst: Offline';
+                scannerStatusDot.classList.add('offline');
+                scannerStatusText.textContent = 'Scanner: -';
+            }
         }
         
         window.addEventListener('online', updateSystemStatus);

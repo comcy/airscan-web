@@ -193,15 +193,6 @@ async def delete_file(filename: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Serve index.html at root
-@app.get("/")
-async def read_root():
-    """Serve main HTML file"""
-    html_file = APP_DIR / "index.html"
-    if not html_file.exists():
-        raise HTTPException(status_code=404, detail="index.html not found")
-    return FileResponse(html_file)
-
 # Mount static files LAST (after all routes)
 # This serves manifest.json, service-worker.js, icons, etc.
 app.mount("/", StaticFiles(directory=str(APP_DIR), html=True), name="static")
