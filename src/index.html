@@ -3,171 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Scanner">
-    <meta name="theme-color" content="#667eea">
-    <meta name="description" content="HP OfficeJet Pro Scanner Webinterface">
-    
-    <!-- PWA Manifest -->
+    <title>AirScan Web</title>
     <link rel="manifest" href="/manifest.json">
-    
-    <!-- Icons -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-    <link rel="apple-touch-icon" href="/icon-192.png">
-    
-    <title>Scanner</title>
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
         :root {
             --primary: #667eea;
-            --primary-dark: #5568d3;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
-            --bg: #f9fafb;
+            --secondary: #764ba2;
+            --bg: #f5f7fa;
             --card-bg: #ffffff;
-            --text: #1f2937;
-            --text-light: #6b7280;
-            --border: #e5e7eb;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+            --text: #2d3436;
+            --success: #00b894;
+            --error: #d63031;
+            --border: #dfe6e9;
+            --shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
         
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            margin: 0;
+            padding: 16px;
+            padding-top: env(safe-area-inset-top, 20px);
+            line-height: 1.5;
         }
         
         .container {
-            max-width: 100%;
-            padding: 16px;
-        }
-        
-        @media (min-width: 768px) {
-            .container {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 32px 20px;
-            }
+            max-width: 600px;
+            margin: 0 auto;
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 16px;
-            margin: -16px -16px 16px -16px;
-            border-radius: 0 0 20px 20px;
-            box-shadow: var(--shadow-lg);
+            text-align: center;
+            margin-bottom: 24px;
         }
         
-        @media (min-width: 768px) {
-            .header {
-                margin: -32px -20px 32px -20px;
-                padding: 32px;
-                border-radius: 0 0 24px 24px;
-            }
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        @media (min-width: 768px) {
-            .header h1 {
-                font-size: 32px;
-            }
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        .install-banner {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            color: white;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            box-shadow: var(--shadow-lg);
-            animation: slideDown 0.3s ease-out;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .install-banner.show {
-            display: flex;
-        }
-        
-        .install-content {
-            flex: 1;
-        }
-        
-        .install-title {
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        .install-text {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .install-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn-install {
-            background: white;
-            color: var(--success);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-        
-        .btn-install:active {
-            transform: scale(0.95);
-        }
-        
-        .btn-dismiss {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .status-badge {
@@ -175,7 +58,7 @@
             gap: 10px;
             justify-content: center;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 12px;
             flex-wrap: wrap;
         }
 
@@ -183,7 +66,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.05);
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
@@ -210,17 +93,10 @@
         
         .card {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
             box-shadow: var(--shadow);
-        }
-        
-        @media (min-width: 768px) {
-            .card {
-                padding: 32px;
-                margin-bottom: 24px;
-            }
         }
         
         .form-group {
@@ -230,28 +106,19 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: var(--text);
             font-weight: 600;
             font-size: 14px;
         }
         
-        input[type="text"],
-        select {
+        input[type="text"], select {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 16px;
             border: 2px solid var(--border);
             border-radius: 12px;
             font-size: 16px;
-            transition: all 0.2s;
-            background: var(--card-bg);
+            background: white;
             color: var(--text);
-        }
-        
-        input[type="text"]:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            appearance: none;
         }
         
         .options-grid {
@@ -262,19 +129,14 @@
         
         .option-card {
             background: var(--bg);
-            padding: 16px;
+            padding: 12px;
             border-radius: 12px;
             border: 2px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 12px;
-            min-height: 60px;
-        }
-        
-        .option-card:active {
-            transform: scale(0.98);
+            gap: 8px;
         }
         
         .option-card.active {
@@ -283,230 +145,113 @@
             color: white;
         }
         
-        input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            accent-color: var(--primary);
-        }
-        
         .btn {
-            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
-            color: white;
+            width: 100%;
+            padding: 16px;
             border: none;
-            padding: 18px 24px;
-            border-radius: 12px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
-            width: 100%;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            touch-action: manipulation;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
         .btn:active {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            transform: scale(0.98);
         }
         
         .btn:disabled {
-            opacity: 0.6;
+            opacity: 0.7;
             cursor: not-allowed;
-            transform: none;
-        }
-        
-        .spinner {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         .output {
-            background: var(--bg);
-            border-radius: 12px;
+            margin-top: 20px;
             padding: 16px;
-            margin-top: 16px;
-            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-            font-size: 13px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            font-family: monospace;
+            font-size: 12px;
             white-space: pre-wrap;
-            max-height: 200px;
-            overflow-y: auto;
             display: none;
-            border-left: 4px solid var(--border);
+            border-left: 4px solid var(--primary);
         }
         
         .output.show { display: block; }
-        .output.success { border-left-color: var(--success); color: var(--success); }
-        .output.error { border-left-color: var(--error); color: var(--error); }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        
-        .section-header h2 {
-            font-size: 20px;
-            color: var(--text);
-        }
-        
-        .refresh-btn {
-            background: var(--bg);
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.2s;
-        }
-        
-        .refresh-btn:active {
-            transform: rotate(180deg);
-        }
+        .output.success { border-left-color: var(--success); }
+        .output.error { border-left-color: var(--error); }
         
         .scan-item {
-            background: var(--bg);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
         }
         
-        .scan-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .scan-item:last-child { border-bottom: none; }
         
-        .scan-name {
-            font-weight: 600;
-            color: var(--text);
-            font-size: 15px;
-            margin-bottom: 4px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+        .scan-info { flex: 1; }
+        .scan-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .scan-meta { font-size: 11px; color: #636e72; }
         
-        .scan-meta {
-            font-size: 13px;
-            color: var(--text-light);
-        }
-        
-        .scan-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
+        .scan-actions { display: flex; gap: 8px; }
         
         .btn-icon {
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: var(--bg);
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            touch-action: manipulation;
+            font-size: 16px;
         }
         
-        .btn-icon:active {
-            transform: scale(0.95);
-        }
-        
-        .btn-icon.download {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
-        }
-        
-        .btn-icon.delete {
-            background: var(--error);
-            border-color: var(--error);
-            color: white;
-        }
+        .btn-icon.delete:hover { background: #ffeaa7; }
+        .btn-icon.download:hover { background: #81ecec; }
         
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: var(--text-light);
+            color: #636e72;
         }
         
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            opacity: 0.5;
-        }
+        .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
         
-        .pull-hint {
-            text-align: center;
-            padding: 12px;
-            color: var(--text-light);
-            font-size: 14px;
-            background: var(--bg);
-            border-radius: 12px;
-            margin-bottom: 16px;
+        /* PWA Elements */
+        .install-banner {
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
             display: none;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--primary);
         }
+        .install-banner.show { display: flex; align-items: center; justify-content: space-between; }
         
-        @media (max-width: 767px) {
-            .pull-hint {
-                display: block;
-            }
-        }
-
         .update-toast {
             position: fixed;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--text);
+            left: 20px;
+            right: 20px;
+            background: #2d3436;
             color: white;
-            padding: 16px 24px;
+            padding: 16px;
             border-radius: 12px;
-            box-shadow: var(--shadow-lg);
             display: none;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
             z-index: 1000;
-            max-width: 90%;
         }
-
-        .update-toast.show {
-            display: flex;
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
+        .update-toast.show { display: flex; }
+        
         .btn-update {
             background: var(--primary);
             color: white;
@@ -514,31 +259,41 @@
             padding: 8px 16px;
             border-radius: 8px;
             font-weight: 600;
-            cursor: pointer;
         }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Install Banner -->
         <div class="install-banner" id="installBanner">
-            <div class="install-content">
-                <div class="install-title">📱 Als App installieren</div>
-                <div class="install-text">Schneller Zugriff vom Homescreen</div>
+            <div>
+                <div style="font-weight: 700;">📱 Als App installieren</div>
+                <div style="font-size: 12px;">Für schnellen Zugriff hinzufügen</div>
             </div>
-            <div class="install-actions">
-                <button class="btn-install" id="installBtn">Installieren</button>
-                <button class="btn-dismiss" id="dismissBtn">✕</button>
+            <div style="display: flex; gap: 8px;">
+                <button id="installBtn" style="padding: 8px 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600;">Installieren</button>
+                <button id="dismissBtn" style="background: none; border: none; font-size: 20px;">✕</button>
             </div>
         </div>
         
         <div class="header">
-            <h1>🖨️ Scanner</h1>
-            <p>HP OfficeJet Pro 8120e series</p>
+            <h1>🖨️ AirScan Web</h1>
             <div class="status-badge">
                 <div class="status-item">
                     <span class="status-dot" id="serviceStatusDot"></span>
-                    <span id="serviceStatusText">Dienst: Online</span>
+                    <span id="serviceStatusText">Dienst: Prüfen...</span>
                 </div>
                 <div class="status-item">
                     <span class="status-dot" id="scannerStatusDot"></span>
@@ -550,255 +305,153 @@
         <div class="card">
             <form id="scanForm">
                 <div class="form-group">
-                    <label for="name">📝 Dateiname</label>
-                    <input type="text" id="name" name="name" placeholder="scan" value="scan">
+                    <label>📝 Dateiname</label>
+                    <input type="text" id="name" name="name" placeholder="scan">
                 </div>
                 
                 <div class="form-group">
-                    <label for="resolution">🎯 Auflösung</label>
+                    <label>🎯 Auflösung</label>
                     <select id="resolution" name="resolution">
-                        <option value="75">75 DPI (Entwurf)</option>
-                        <option value="150" selected>150 DPI (Standard)</option>
-                        <option value="300">300 DPI (Hoch)</option>
-                        <option value="600">600 DPI (Foto)</option>
+                        <option value="75">75 DPI</option>
+                        <option value="150" selected>150 DPI</option>
+                        <option value="300">300 DPI</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="mode">🎨 Modus</label>
+                    <label>🎨 Modus</label>
                     <select id="mode" name="mode">
                         <option value="color" selected>Farbe</option>
                         <option value="gray">Graustufen</option>
-                        <option value="lineart">Schwarz-Weiß</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="source">📄 Quelle</label>
+                    <label>📄 Quelle</label>
                     <select id="source" name="source">
-                        <option value="adf" selected>Automatischer Einzug</option>
+                        <option value="adf" selected>Einzug (ADF)</option>
                         <option value="flatbed">Flachbett</option>
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label>⚙️ Optionen</label>
-                    <div class="options-grid">
-                        <div class="option-card active" data-option="compress">
-                            <input type="checkbox" id="compress" name="compress" checked>
-                            <label for="compress" style="margin: 0; font-weight: 500; cursor: pointer;">Komprimieren</label>
-                        </div>
-                        <div class="option-card" data-option="ocr">
-                            <input type="checkbox" id="ocr" name="ocr">
-                            <label for="ocr" style="margin: 0; font-weight: 500; cursor: pointer;">OCR</label>
-                        </div>
+                <div class="options-grid">
+                    <div class="option-card active" id="compressCard">
+                        <input type="checkbox" id="compress" checked style="display:none">
+                        <span>📦 Komprimieren</span>
+                    </div>
+                    <div class="option-card" id="ocrCard">
+                        <input type="checkbox" id="ocr" style="display:none">
+                        <span>🔍 OCR</span>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn" id="scanBtn">
+                <button type="submit" class="btn" id="scanBtn" style="margin-top: 24px;">
                     🚀 Scan starten
                 </button>
             </form>
-            
-            <div class="output" id="output"></div>
+            <div id="output" class="output"></div>
         </div>
         
-        <div class="card">
-            <div class="section-header">
-                <h2>📂 Scans</h2>
-                <button class="refresh-btn" id="refreshBtn">🔄</button>
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+                <h2 style="margin: 0; font-size: 18px;">📂 Letzte Scans</h2>
+                <button id="refreshBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🔄</button>
             </div>
-            <div class="pull-hint">↓ Nach unten ziehen zum Aktualisieren</div>
             <div id="scansList">
-                <div class="empty-state">
-                    <div class="empty-state-icon">⏳</div>
-                    <div>Lade...</div>
-                </div>
+                <div class="empty-state">⏳ Lade Scans...</div>
             </div>
         </div>
     </div>
 
-    <!-- Update Toast -->
     <div class="update-toast" id="updateToast">
-        <span>🎉 Update verfügbar!</span>
-        <button class="btn-update" id="updateBtn">Aktualisieren</button>
+        <span>Update verfügbar!</span>
+        <button class="btn-update" id="updateBtn">Neu laden</button>
     </div>
-    
+
     <script>
-        console.log('🚀 Scanner App gestartet');
+        console.log('🚀 App init...');
         
-        // DOM-Elemente
+        // Element-Referenzen
         const form = document.getElementById('scanForm');
-        const output = document.getElementById('output');
         const scanBtn = document.getElementById('scanBtn');
+        const output = document.getElementById('output');
         const scansList = document.getElementById('scansList');
         const refreshBtn = document.getElementById('refreshBtn');
-        const installBanner = document.getElementById('installBanner');
-        const installBtn = document.getElementById('installBtn');
-        const dismissBtn = document.getElementById('dismissBtn');
-        const updateBtn = document.getElementById('updateBtn');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        
-        // PWA Install Prompt
-        let deferredPrompt;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('📱 beforeinstallprompt Event');
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            if (!localStorage.getItem('installDismissed')) {
-                installBanner.classList.add('show');
-            }
-        });
-        
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log('PWA Install:', outcome);
-                deferredPrompt = null;
-                installBanner.classList.remove('show');
-            }
-        });
-        
-        dismissBtn.addEventListener('click', () => {
-            installBanner.classList.remove('show');
-            localStorage.setItem('installDismissed', 'true');
-        });
-        
-        window.addEventListener('appinstalled', () => {
-            console.log('✅ PWA installiert');
-            installBanner.classList.remove('show');
-        });
-        
-        // Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then((registration) => {
-                    console.log('✅ Service Worker registriert');
-                    
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                document.getElementById('updateToast').classList.add('show');
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error('❌ Service Worker Fehler:', error);
-                });
-        }
-        
-        updateBtn.addEventListener('click', () => {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistration().then((registration) => {
-                    if (registration && registration.waiting) {
-                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    }
-                });
-                window.location.reload();
-            }
-        }
-        
-        // Online/Offline Status
         const serviceStatusDot = document.getElementById('serviceStatusDot');
         const serviceStatusText = document.getElementById('serviceStatusText');
         const scannerStatusDot = document.getElementById('scannerStatusDot');
         const scannerStatusText = document.getElementById('scannerStatusText');
-        
-        async function updateSystemStatus() {
-            if (!navigator.onLine) {
-                serviceStatusDot.classList.add('offline');
-                serviceStatusText.textContent = 'Browser: Offline';
-                scannerStatusDot.classList.add('offline');
-                scannerStatusText.textContent = 'Scanner: -';
-                return;
-            }
 
+        // Status-Checker
+        async function updateStatus() {
+            console.log('📡 Status-Check...');
             try {
-                const response = await fetch('/api/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Service Status
-                    serviceStatusDot.classList.remove('offline');
-                    serviceStatusText.textContent = 'Dienst: Online';
-                    
-                    // Scanner Status
-                    if (data.scanner) {
-                        scannerStatusDot.classList.remove('offline');
-                        scannerStatusDot.classList.remove('searching');
-                        scannerStatusText.textContent = 'Scanner: Bereit';
-                    } else {
-                        scannerStatusDot.classList.add('offline');
-                        scannerStatusDot.classList.remove('searching');
-                        scannerStatusText.textContent = 'Scanner: Offline';
-                    }
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                serviceStatusDot.classList.remove('offline');
+                serviceStatusText.textContent = 'Dienst: Online';
+                
+                if (data.scanner) {
+                    scannerStatusDot.classList.remove('offline');
+                    scannerStatusText.textContent = 'Scanner: Bereit';
                 } else {
-                    throw new Error('Server error');
+                    scannerStatusDot.classList.add('offline');
+                    scannerStatusText.textContent = 'Scanner: Offline';
                 }
-            } catch (error) {
+            } catch (e) {
                 serviceStatusDot.classList.add('offline');
                 serviceStatusText.textContent = 'Dienst: Offline';
                 scannerStatusDot.classList.add('offline');
                 scannerStatusText.textContent = 'Scanner: -';
             }
         }
-        
-        window.addEventListener('online', updateSystemStatus);
-        window.addEventListener('offline', updateSystemStatus);
-        
-        // Polling every 15 seconds
-        setInterval(updateSystemStatus, 15000);
-        updateSystemStatus();
-        
-        // Option cards toggle
-        document.querySelectorAll('.option-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    const checkbox = card.querySelector('input[type="checkbox"]');
-                    checkbox.checked = !checkbox.checked;
+        setInterval(updateStatus, 15000);
+        updateStatus();
+
+        // Scan-Liste laden
+        async function loadScans() {
+            console.log('🔄 Scans laden...');
+            try {
+                const res = await fetch('/api/scans');
+                const scans = await res.json();
+                
+                if (scans.length === 0) {
+                    scansList.innerHTML = '<div class="empty-state">Keine Scans gefunden.</div>';
+                    return;
                 }
-                card.classList.toggle('active', card.querySelector('input').checked);
-            });
-        });
-        
-        // Pull to refresh
-        let startY = 0;
-        
-        document.addEventListener('touchstart', (e) => {
-            if (window.scrollY === 0) {
-                startY = e.touches[0].pageY;
+                
+                scansList.innerHTML = scans.map(s => `
+                    <div class="scan-item">
+                        <div class="scan-info">
+                            <div class="scan-name">${s.filename}</div>
+                            <div class="scan-meta">${(s.size/1024/1024).toFixed(2)} MB • ${s.created}</div>
+                        </div>
+                        <div class="scan-actions">
+                            <button class="btn-icon download" onclick="location.href='${s.downloadUrl}'">⬇️</button>
+                            <button class="btn-icon delete" onclick="deleteScan('${s.filename}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                scansList.innerHTML = '<div class="empty-state">Fehler beim Laden.</div>';
             }
-        });
-        
-        document.addEventListener('touchmove', (e) => {
-            if (startY > 0) {
-                const pullDistance = e.touches[0].pageY - startY;
-                if (pullDistance > 80) {
-                    console.log('🔄 Pull-to-refresh');
-                    loadScans();
-                    startY = 0;
-                }
-            }
-        });
-        
-        // Refresh button
-        refreshBtn.addEventListener('click', () => {
-            console.log('🔄 Refresh geklickt');
+        }
+        refreshBtn.addEventListener('click', loadScans);
+        loadScans();
+
+        async function deleteScan(name) {
+            if (!confirm(`"${name}" löschen?`)) return;
+            await fetch(`/api/delete/${name}`, { method: 'DELETE' });
             loadScans();
-        });
-        
-        // Scan form
+        }
+
+        // Formular-Handling
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('📤 Scan gestartet');
+            console.log('📤 Scan-Submit!');
             
-            const formData = {
+            const data = {
                 name: document.getElementById('name').value || 'scan',
                 resolution: parseInt(document.getElementById('resolution').value),
                 mode: document.getElementById('mode').value,
@@ -809,149 +462,61 @@
             
             scanBtn.disabled = true;
             scanBtn.innerHTML = '<span class="spinner"></span> Scanne...';
-            output.classList.remove('show');
+            output.className = 'output show';
+            output.textContent = 'Sende Auftrag an Scanner...';
             
             try {
-                const response = await fetch('/api/scan', {
+                const res = await fetch('/api/scan', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
                 });
-                
-                const result = await response.json();
-                output.classList.add('show');
+                const result = await res.json();
                 
                 if (result.success) {
                     output.className = 'output show success';
-                    output.textContent = result.output + '\n\n✅ PDF: ' + result.filename;
+                    output.textContent = '✅ Fertig: ' + result.filename;
                     loadScans();
-                    
-                    if (navigator.vibrate) navigator.vibrate(200);
-                    
-                    setTimeout(() => {
-                        if (confirm('Jetzt herunterladen?')) {
-                            window.location.href = result.downloadUrl;
-                        }
-                    }, 500);
                 } else {
                     output.className = 'output show error';
-                    output.textContent = '❌ ' + (result.error || result.output);
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    output.textContent = '❌ Fehler: ' + result.error;
                 }
-            } catch (error) {
-                console.error('❌ Scan-Fehler:', error);
-                output.classList.add('show');
+            } catch (e) {
                 output.className = 'output show error';
-                output.textContent = '❌ ' + error.message;
+                output.textContent = '❌ Verbindung fehlgeschlagen.';
             } finally {
                 scanBtn.disabled = false;
                 scanBtn.innerHTML = '🚀 Scan starten';
             }
         });
-        
-        // Load scans
-        async function loadScans() {
-            console.log('🔄 loadScans()');
-            
-            try {
-                const response = await fetch('/api/scans');
-                console.log('📡 Status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const scans = await response.json();
-                console.log('📄 Scans:', scans.length);
-                
-                if (scans.length === 0) {
-                    scansList.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📭</div>
-                            <div>Keine Scans vorhanden</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                scansList.innerHTML = scans.map(scan => `
-                    <div class="scan-item">
-                        <div class="scan-info">
-                            <div class="scan-name">${escapeHtml(scan.filename)}</div>
-                            <div class="scan-meta">${formatBytes(scan.size)} • ${escapeHtml(scan.created)}</div>
-                        </div>
-                        <div class="scan-actions">
-                            <button class="btn-icon download" data-filename="${escapeHtml(scan.filename)}">⬇️</button>
-                            <button class="btn-icon delete" data-filename="${escapeHtml(scan.filename)}">🗑️</button>
-                        </div>
-                    </div>
-                `).join('');
-                
-                // Event-Listener für Buttons
-                document.querySelectorAll('.btn-icon.download').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const filename = e.currentTarget.dataset.filename;
-                        console.log('📥 Download:', filename);
-                        window.location.href = `/api/download/${encodeURIComponent(filename)}`;
-                    });
-                });
-                
-                document.querySelectorAll('.btn-icon.delete').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const filename = e.currentTarget.dataset.filename;
-                        if (!confirm(`"${filename}" löschen?`)) return;
-                        
-                        console.log('🗑️ Lösche:', filename);
-                        
-                        try {
-                            const response = await fetch(`/api/delete/${encodeURIComponent(filename)}`, {
-                                method: 'DELETE'
-                            });
-                            
-                            if (response.ok) {
-                                console.log('✅ Gelöscht');
-                                loadScans();
-                                if (navigator.vibrate) navigator.vibrate(100);
-                            }
-                        } catch (error) {
-                            console.error('❌ Fehler:', error);
-                            alert('Fehler: ' + error.message);
+
+        // Option-Cards
+        ['compress', 'ocr'].forEach(opt => {
+            const card = document.getElementById(opt + 'Card');
+            const cb = document.getElementById(opt);
+            card.addEventListener('click', () => {
+                cb.checked = !cb.checked;
+                card.classList.toggle('active', cb.checked);
+            });
+        });
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').then(reg => {
+                console.log('SW ok');
+                reg.onupdatefound = () => {
+                    const sw = reg.installing;
+                    sw.onstatechange = () => {
+                        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('updateToast').classList.add('show');
                         }
-                    });
-                });
-                
-                console.log('✅ Scans geladen');
-                
-            } catch (error) {
-                console.error('❌ Fehler:', error);
-                scansList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <div>Fehler beim Laden</div>
-                        <div style="font-size: 12px; margin-top: 8px; color: var(--error);">${error.message}</div>
-                    </div>
-                `;
-            }
+                    };
+                };
+            });
         }
+        document.getElementById('updateBtn').addEventListener('click', () => location.reload());
         
-        // Helper functions
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-        
-        // Initial load
-        loadScans();
-        console.log('✅ App initialisiert');
+        console.log('✅ App bereit');
     </script>
 </body>
 </html>
