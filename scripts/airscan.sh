@@ -80,7 +80,11 @@ FINAL_PDF="$BASE_DIR/$OUT_NAME.pdf"
 
 # Scan-Befehl zusammenstellen
 SCAN_CMD=(hp-scan --device "$DEVICE_URI" --resolution "$RESOLUTION" --mode "$MODE" --file "temp_scan")
-[[ "$SOURCE" == "adf" ]] && SCAN_CMD+=(--adf) || SCAN_CMD+=(--flatbed)
+if [[ "$SOURCE" == "adf" ]]; then
+  SCAN_CMD+=(--source=adf)
+else
+  SCAN_CMD+=(--source=flatbed)
+fi
 
 echo "➡️  Device: $DEVICE_URI"
 echo "➡️  Quelle: $SOURCE"

@@ -56,15 +56,17 @@ async def get_status():
     scanner_name = None
     
     try:
-        # Check for HP scanner specifically as it is used in airscan.sh
-        result = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=5)
-        if "HP" in result.stdout or "OfficeJet" in result.stdout:
+        # Increased timeout to 10s for network discovery
+        result = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=10)
+        if "HP" in result.stdout or "OfficeJet" in result.stdout or "airscan" in result.stdout:
             scanner_online = True
-            # Try to extract name
             for line in result.stdout.splitlines():
                 if "HP" in line or "OfficeJet" in line:
                     scanner_name = line.split("is a")[-1].strip() if "is a" in line else "HP Scanner"
                     break
+    except subprocess.TimeoutExpired:
+        print("⚠️ Scanner status check timed out")
+        # If it times out, we don't know for sure, but we keep it offline to be safe
     except Exception as e:
         print(f"⚠️ Error checking scanner status: {e}")
 
