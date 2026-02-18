@@ -44,6 +44,48 @@ class ScanFile(BaseModel):
     created: str
     downloadUrl: str
 
+class StatusResponse(BaseModel):
+    service: bool
+    scanner: bool
+    scanner_name: Optional[str] = None
+
+@app.get("/api/status", response_model=StatusResponse)
+async def get_status():
+    """Check status of service and scanner"""
+    scanner_online = False
+    scanner_name = None
+    
+    try:
+        # Check for HP scanner specifically as it is used in airscan.sh
+        result = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=5)
+        if "HP" in result.stdout or "OfficeJet" in result.stdout:
+            scanner_online = True
+            # Try to extract name
+            for line in result.stdout.splitlines():
+                if "HP" in line or "OfficeJet" in line:
+                    scanner_name = line.split("is a")[-1].strip() if "is a" in line else "HP Scanner"
+                    break
+    except Exception as e:
+        print(f"⚠️ Error checking scanner status: {e}")
+
+    return StatusResponse(
+        service=True,
+        scanner=scanner_online,
+        scanner_name=scanner_name
+    )
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the web interface"""
+    html_path = APP_DIR / "index.html"
+    print(f"📄 Loading HTML from: {html_path}")
+    
+    if not html_path.exists():
+        raise HTTPException(status_code=500, detail=f"index.html not found at {html_path}")
+    
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
 @app.post("/api/scan", response_model=ScanResponse)
 async def start_scan(request: ScanRequest):
     """Start a scan job"""

@@ -171,14 +171,23 @@
         }
         
         .status-badge {
-            display: inline-flex;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
             align-items: center;
             gap: 6px;
-            background: rgba(255,255,255,0.2);
-            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 12px;
-            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 600;
         }
         
         .status-dot {
@@ -527,8 +536,14 @@
             <h1>🖨️ Scanner</h1>
             <p>HP OfficeJet Pro 8120e series</p>
             <div class="status-badge">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Online</span>
+                <div class="status-item">
+                    <span class="status-dot" id="serviceStatusDot"></span>
+                    <span id="serviceStatusText">Dienst: Online</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot" id="scannerStatusDot"></span>
+                    <span id="scannerStatusText">Scanner: Prüfen...</span>
+                </div>
             </div>
         </div>
         
@@ -689,20 +704,59 @@
             }
         });
         
-        // Online/Offline Status
-        function updateOnlineStatus() {
-            if (navigator.onLine) {
-                statusDot.classList.remove('offline');
-                statusText.textContent = 'Online';
-            } else {
-                statusDot.classList.add('offline');
-                statusText.textContent = 'Offline';
-            }
+                // Online/Offline Status
+                const serviceStatusDot = document.getElementById('serviceStatusDot');
+                const serviceStatusText = document.getElementById('serviceStatusText');
+                const scannerStatusDot = document.getElementById('scannerStatusDot');
+                const scannerStatusText = document.getElementById('scannerStatusText');
+                
+                async function updateSystemStatus() {
+                    if (!navigator.onLine) {
+                        serviceStatusDot.classList.add('offline');
+                        serviceStatusText.textContent = 'Browser: Offline';
+                        scannerStatusDot.classList.add('offline');
+                        scannerStatusText.textContent = 'Scanner: -';
+                        return;
+                    }
+        
+                    try {
+                        const response = await fetch('/api/status');
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // Service Status
+                            serviceStatusDot.classList.remove('offline');
+                            serviceStatusText.textContent = 'Dienst: Online';
+                            
+                            // Scanner Status
+                            if (data.scanner) {
+                                scannerStatusDot.classList.remove('offline');
+                                scannerStatusDot.classList.remove('searching');
+                                scannerStatusText.textContent = 'Scanner: Bereit';
+                            } else {
+                                scannerStatusDot.classList.add('offline');
+                                scannerStatusDot.classList.remove('searching');
+                                scannerStatusText.textContent = 'Scanner: Offline';
+                            }
+                        } else {
+                            throw new Error('Server error');
+                        }
+                    } catch (error) {
+                        serviceStatusDot.classList.add('offline');
+                        serviceStatusText.textContent = 'Dienst: Offline';
+                        scannerStatusDot.classList.add('offline');
+                        scannerStatusText.textContent = 'Scanner: -';
+                    }
+                }
+        
         }
         
-        window.addEventListener('online', updateOnlineStatus);
-        window.addEventListener('offline', updateOnlineStatus);
-        updateOnlineStatus();
+        window.addEventListener('online', updateSystemStatus);
+        window.addEventListener('offline', updateSystemStatus);
+        
+        // Polling every 15 seconds
+        setInterval(updateSystemStatus, 15000);
+        updateSystemStatus();
         
         // Option cards toggle
         document.querySelectorAll('.option-card').forEach(card => {
