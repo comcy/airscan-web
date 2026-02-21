@@ -1,115 +1,127 @@
 # 🖨️ AirScan Web - Scanner Web Interface
 
-PWA-basiertes Webinterface für HP AirScan-kompatible Drucker/Scanner.
+PWA-based web interface for HP AirScan-compatible printers/scanners.
 
 ## ✨ Features
 
-- 📱 **PWA** - Installierbar als native App auf allen Geräten
-- 🎨 **Modern** - Responsive Design, optimiert für Mobile & Desktop
-- ⚡ **Schnell** - Service Worker für Offline-Funktionalität
-- 🔄 **Live** - Scan-Status und Download-Liste in Echtzeit
-- 🗜️ **Komprimierung** - Automatische PDF-Komprimierung
-- 📝 **OCR** - Optionale Texterkennung (Deutsch/Englisch)
-- 🌐 **Netzwerk** - Zugriff von jedem Gerät im Netzwerk
+- 📱 **PWA** - Installable as a native app on all devices
+- 🎨 **Modern** - Responsive design, optimized for mobile & desktop
+- ⚡ **Fast** - Service Worker for offline functionality
+- 🔄 **Live** - Scan status and download list in real-time
+- 🗜️ **Compression** - Automatic PDF compression
+- 📝 **OCR** - Optional text recognition (German/English)
+- 🌐 **Network** - Access from any device on the network
 
-## 📋 Voraussetzungen
+## 📋 Prerequisites
 
 - Ubuntu/Debian Linux
 - Python 3.8+
-- HP AirScan-kompatibler Scanner
+- HP AirScan-compatible scanner
 - `hp-scan` Tool (HPLIP)
 
 ## 🚀 Installation
 
-### 1. Repository klonen
+### One-Line Installation (One-Liner)
+
+To install or update Airscan-Web, simply copy the following command into your terminal and execute it:
+
 ```bash
-git clone https://github.com/comcy/airscan-web.git
-cd airscan-web
+curl -sL https://raw.githubusercontent.com/comcy/airscan-web/main/install.sh | bash
 ```
 
-### 2. Installation ausführen
-```bash
-chmod +x setup.sh
-./setup.sh
-```
+The script will automatically clone the repository (if not already done), fetch the latest updates, and perform all necessary installation steps, including:
+- ✅ Installation of all system dependencies
+- ✅ Creation of a Python Virtual Environment
+- ✅ Copying all application files
+- ✅ Generation of PWA icons
+- ✅ Setup of the Systemd service
+- ✅ Automatic application startup
 
-Das Setup-Skript:
-- ✅ Installiert alle System-Abhängigkeiten
-- ✅ Erstellt Python Virtual Environment
-- ✅ Kopiert alle Dateien
-- ✅ Generiert PWA-Icons
-- ✅ Richtet Systemd-Service ein
-- ✅ Startet die App automatisch
+### Manual Installation (Optional)
 
-### 3. App öffnen
+If you prefer manual control over the process, you can follow these steps:
 
-Nach erfolgreicher Installation ist die App erreichbar unter:
+1.  **Clone Repository**
+    ```bash
+    git clone https://github.com/comcy/airscan-web.git
+    cd airscan-web
+    ```
 
-- **Lokal**: http://localhost:5000
-- **Netzwerk**: http://\<deine-ip\>:5000
+2.  **Execute Installation**
+    ```bash
+    chmod +x setup.sh
+    ./setup.sh
+    ```
 
-## 📱 Als PWA installieren
+### 3. Open App
 
-1. Öffne die App im Browser (Chrome/Safari/Edge)
-2. Klicke auf **"Installieren"** im grünen Banner
-3. Die App wird zum Homescreen hinzugefügt
+After successful installation, the app is accessible at:
 
-## ⚙️ Konfiguration
+-   **Local**: http://localhost:5000
+-   **Network**: http://<your-ip>:5000
 
-### Scanner-Device anpassen
+## 📱 Install as PWA
 
-Bearbeite `~/airscan.sh` und passe die Zeile mit `DEVICE_URI` an:
+1.  Open the app in your browser (Chrome/Safari/Edge)
+2.  Click on **"Install"** in the green banner
+3.  The app will be added to your homescreen
+
+## ⚙️ Configuration
+
+### Adjust Scanner Device
+
+Edit `~/airscan.sh` and adjust the line with `DEVICE_URI`:
 ```bash
 DEVICE_URI="airscan:e0:HP OfficeJet Pro 8120e series [A662F3]"
 ```
 
-Verfügbare Geräte anzeigen:
+Show available devices:
 ```bash
 hp-scan -g
 ```
 
-### Port ändern
+### Change Port
 
-Bearbeite `/etc/systemd/system/scan-web.service` und ändere:
+Edit `/etc/systemd/system/scan-web.service` and change:
 ```ini
 ExecStart=.../uvicorn app:app --host 0.0.0.0 --port 5000
 ```
 
-Dann Service neu starten:
+Then restart the service:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart scan-web
 ```
 
-## 🔧 Verwaltung
+## 🔧 Management
 ```bash
-# Status anzeigen
+# Show status
 sudo systemctl status scan-web
 
-# Service neustarten
+# Restart service
 sudo systemctl restart scan-web
 
-# Logs anschauen
+# View logs
 sudo journalctl -u scan-web -f
 
-# Service stoppen
+# Stop service
 sudo systemctl stop scan-web
 
-# Service deaktivieren
+# Disable service
 sudo systemctl disable scan-web
 ```
 
-## 📂 Verzeichnisstruktur
+## 📂 Directory Structure
 ```
-~/scan-web/          # App-Installation
-~/airscan.sh         # Scan-Skript
-~/scans/             # Gescannte PDFs
-~/scans/.airscan/    # Temporäre Dateien
+~/scan-web/          # App installation
+~/airscan.sh         # Scan script
+~/scans/             # Scanned PDFs
+~/scans/.airscan/    # Temporary files
 ```
 
-## 🛠️ Entwicklung
+## 🛠️ Development
 
-### Lokalen Dev-Server starten
+### Start Local Dev Server
 ```bash
 cd src
 python3 -m venv venv
@@ -118,7 +130,7 @@ pip install -r ../requirements.txt
 uvicorn app:app --reload --port 5000
 ```
 
-### Icons neu generieren
+### Regenerate Icons
 ```bash
 cd src
 python3 generate-icons.py
@@ -126,31 +138,31 @@ python3 generate-icons.py
 
 ## 📸 Screenshots
 
-_(Hier könntest du Screenshots einfügen)_
+_(You could insert screenshots here)_
 
-## 🤝 Beitragen
+## 🤝 Contribute
 
-Contributions sind willkommen! Bitte erstelle einen Pull Request.
+Contributions are welcome! Please create a Pull Request.
 
-## 📄 Lizenz
+## 📄 License
 
-MIT License - siehe [LICENSE](LICENSE) Datei.
+MIT License - see [LICENSE](LICENSE) file.
 
 ## 🙏 Credits
 
-- FastAPI - https://fastapi.tiangolo.com/
-- HPLIP - https://developers.hp.com/hp-linux-imaging-and-printing
+-   FastAPI - https://fastapi.tiangolo.com/
+-   HPLIP - https://developers.hp.com/hp-linux-imaging-and-printing
 
-## ⚠️ Bekannte Probleme
+## ⚠️ Known Issues
 
-- OCR benötigt `tesseract-ocr-deu` Package
-- ADF-Modus erstellt manchmal doppelte Seiten bei manchen Scannern
+-   OCR requires `tesseract-ocr-deu` package
+-   ADF mode sometimes creates duplicate pages with some scanners
 
-## 💡 Tipps
+## 💡 Tips
 
-- Für beste Qualität: 300 DPI für Dokumente, 600 DPI für Fotos
-- OCR funktioniert am besten mit Graustufen-Scans
-- Komprimierung reduziert Dateigröße um ~70%
+-   For best quality: 300 DPI for documents, 600 DPI for photos
+-   OCR works best with grayscale scans
+-   Compression reduces file size by ~70%
 
 ---
 
