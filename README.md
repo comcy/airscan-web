@@ -30,12 +30,14 @@ curl -sL https://raw.githubusercontent.com/comcy/airscan-web/main/install.sh | b
 ```
 
 The script will automatically clone the repository (if not already done), fetch the latest updates, and perform all necessary installation steps, including:
-- ✅ Installation of all system dependencies
-- ✅ Creation of a Python Virtual Environment
-- ✅ Copying all application files
-- ✅ Generation of PWA icons
-- ✅ Setup of the Systemd service
-- ✅ Automatic application startup
+- ✅ Installation of system dependencies (e.g., Python 3, pip, venv, python-imaging libraries) using `sudo apt install`.
+- ✅ Creation of a Python Virtual Environment within the application's installation directory (`~/scan-web/venv`).
+- ✅ Copying all application files to the dedicated installation directory (`~/scan-web/`).
+- ✅ Copying the `airscan.sh` script to `~/airscan.sh` and making it executable.
+- ✅ Generation of PWA icons for the web interface.
+- ✅ Creation of a dedicated directory for scanned files at `~/scans/` in your home directory.
+- ✅ Setup, enabling, and starting of a Systemd service (`scan-web.service` at `/etc/systemd/system/`) for automatic startup and background operation of the application.
+- ✅ Automatic application startup.
 
 ### Manual Installation (Optional)
 
@@ -135,18 +137,9 @@ uvicorn app:app --reload --port 5000
 cd src
 python3 generate-icons.py
 ```
-
-## 📸 Screenshots
-
-_(You could insert screenshots here)_
-
 ## 🤝 Contribute
 
 Contributions are welcome! Please create a Pull Request.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file.
 
 ## 🙏 Credits
 
@@ -163,6 +156,10 @@ MIT License - see [LICENSE](LICENSE) file.
 -   For best quality: 300 DPI for documents, 600 DPI for photos
 -   OCR works best with grayscale scans
 -   Compression reduces file size by ~70%
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
