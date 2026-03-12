@@ -35,7 +35,81 @@ if env_path.exists():
 SCANS_DIR = os.path.expanduser("~/scans")
 APP_DIR = Path(__file__).parent.absolute()
 
-# ... restliche Klassen ...
+# Stelle sicher, dass Verzeichnis existiert
+os.makedirs(SCANS_DIR, exist_ok=True)
+
+class ScanRequest(BaseModel):
+    name: Optional[str] = "scan"
+    resolution: int = 150
+    mode: str = "color"
+    source: str = "adf"
+    compress: bool = True
+    ocr: bool = False
+
+class ScanResponse(BaseModel):
+    success: bool
+    output: Optional[str] = None
+    filename: Optional[str] = None
+    downloadUrl: Optional[str] = None
+    error: Optional[str] = None
+
+class ScanFile(BaseModel):
+    filename: str
+    size: int
+    created: str
+    downloadUrl: str
+
+class StatusResponse(BaseModel):
+    service: bool
+    scanner: bool
+    scanner_name: Optional[str] = None
+
+@app.get("/api/status", response_model=StatusResponse)
+async def get_status():
+    """Check status of service and scanner"""
+    scanner_online = False
+    scanner_name = None
+    
+    try:
+        # Check using scanimage -L
+        result = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=10)
+        if any(keyword in result.stdout for keyword in ["HP", "OfficeJet", "airscan"]):
+            scanner_online = True
+            for line in result.stdout.splitlines():
+                if "HP" in line or "OfficeJet" in line:
+                    scanner_name = line.split("is a")[-1].strip() if "is a" in line else "Scanner"
+                    break
+    except Exception as e:
+        print(f"⚠️ Status check error: {e}")
+
+    return StatusResponse(
+        service=True,
+        scanner=scanner_online,
+        scanner_name=scanner_name
+    )
+
+@app.get("/api/scans", response_model=list[ScanFile])
+async def list_scans():
+    """List all scanned PDFs"""
+    try:
+        pdf_files = glob.glob(os.path.join(SCANS_DIR, "*.pdf"))
+        scans = []
+        
+        for pdf in sorted(pdf_files, key=os.path.getctime, reverse=True)[:50]:
+            try:
+                stat = os.stat(pdf)
+                fname = os.path.basename(pdf)
+                scans.append(ScanFile(
+                    filename=fname,
+                    size=stat.st_size,
+                    created=datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
+                    downloadUrl=f"/api/download/{fname}"
+                ))
+            except: continue
+        
+        return scans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/scan", response_model=ScanResponse)
 async def start_scan(request: ScanRequest):
@@ -44,6 +118,7 @@ async def start_scan(request: ScanRequest):
         print(f"❌ Scan-Skript nicht gefunden: {SCAN_SCRIPT}")
         return ScanResponse(success=False, error=f"Scan-Skript nicht gefunden unter {SCAN_SCRIPT}")
     
+    # Merke dir den Zeitpunkt vor dem Scan, um neue Dateien zu identifizieren
     start_time = datetime.now().timestamp()
     
     cmd = [SCAN_SCRIPT, "-n", request.name, "-r", str(request.resolution), "-m", request.mode]
