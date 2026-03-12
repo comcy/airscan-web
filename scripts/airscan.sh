@@ -5,6 +5,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ -f "$SCRIPT_DIR/../.env" ]] && export $(grep -v '^#' "$SCRIPT_DIR/../.env" | xargs)
 
+# Pfade zu den Tools sicherstellen
+MAGICK_CMD=$(command -v magick || command -v convert || echo "magick")
+SCANIMAGE_CMD=$(command -v scanimage || echo "scanimage")
+
 DEVICE_URI="${DEVICE_URI:-}"
 BASE_DIR="$HOME/scans"
 TMP_DIR="$BASE_DIR/.airscan"
@@ -30,7 +34,7 @@ done
 
 # Automatische Erkennung falls leer
 if [[ -z "$DEVICE_URI" ]]; then
-  DEVICE_URI=$(scanimage -L | grep -E "airscan|hpaio" | head -n 1 | sed -n "s/device \`\(.*\)' is a .*/\1/p" || true)
+  DEVICE_URI=$($SCANIMAGE_CMD -L | grep -E "airscan|hpaio" | head -n 1 | sed -n "s/device \`\(.*\)' is a .*/\1/p" || true)
 fi
 
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -44,14 +48,11 @@ rm -f scan_*.tiff hpscan*.pdf hpscan*.png 2>/dev/null || true
 if [[ "$DEVICE_URI" == airscan:* ]]; then
   echo "🚀 Nutze AirScan (scanimage)..."
   
-  # AirScan nutzt meistens "ADF" oder "Flatbed" als String
   SRC_PARAM="Flatbed"
   [[ "$SOURCE" == "adf" ]] && SRC_PARAM="ADF"
   
-  # Scanimage Befehl für AirScan
-  # --batch erzeugt scan_1.tiff, scan_2.tiff etc.
   set +e
-  scanimage -d "$DEVICE_URI" \
+  $SCANIMAGE_CMD -d "$DEVICE_URI" \
             --source "$SRC_PARAM" \
             --resolution "$RESOLUTION" \
             --mode "$MODE" \
@@ -61,16 +62,14 @@ if [[ "$DEVICE_URI" == airscan:* ]]; then
   set -e
   
   if [[ $SCAN_EXIT -ne 0 ]]; then
-    # Wenn ADF leer ist, gibt scanimage oft Fehler aus - das ignorieren wir, wenn Dateien da sind
     if ! ls scan_*.tiff &>/dev/null; then
       echo "❌ Scanimage Fehler:" >&2; cat scan.err >&2; exit 1
     fi
   fi
 
-  # TIFFs zu PDF konvertieren
   echo "➡️  Konvertiere TIFF zu PDF..."
-  magick scan_*.tiff "$FINAL_PDF"
-  rm scan_*.tiff
+  $MAGICK_CMD scan_*.tiff "$FINAL_PDF"
+  rm -f scan_*.tiff
 
 elif [[ "$DEVICE_URI" == hpaio:* ]]; then
   echo "🚀 Nutze HPLIP (hp-scan)..."
@@ -83,7 +82,6 @@ elif [[ "$DEVICE_URI" == hpaio:* ]]; then
   SCAN_EXIT=$?
   set -e
   
-  # PDF finden
   shopt -s nullglob
   pdf_files=(hpscan*.pdf)
   if (( ${#pdf_files[@]} > 0 )); then
@@ -91,7 +89,7 @@ elif [[ "$DEVICE_URI" == hpaio:* ]]; then
   else
     png_files=(hpscan*.png)
     if (( ${#png_files[@]} > 0 )); then
-      magick "${png_files[@]}" "$FINAL_PDF"
+      $MAGICK_CMD "${png_files[@]}" "$FINAL_PDF"
       rm "${png_files[@]}"
     else
       echo "❌ hp-scan Fehler:" >&2; cat scan.err >&2; exit 1

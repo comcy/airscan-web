@@ -6,288 +6,123 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Banner
 echo -e "${BLUE}"
-cat << "EOF"
-
+cat << "BANNER"
  █████  ██ ██████  ███████  ██████  █████  ███    ██       ██     ██ ███████ ██████  
 ██   ██ ██ ██   ██ ██      ██      ██   ██ ████   ██       ██     ██ ██      ██   ██ 
 ███████ ██ ██████  ███████ ██      ███████ ██ ██  ██ █████ ██  █  ██ █████   ██████  
 ██   ██ ██ ██   ██      ██ ██      ██   ██ ██  ██ ██       ██ ███ ██ ██      ██   ██ 
 ██   ██ ██ ██   ██ ███████  ██████ ██   ██ ██   ████        ███ ███  ███████ ██████  
-                                                                                                                                   
-  Scanner Web Interface - Installation
-EOF
+BANNER
 echo -e "${NC}"
-echo ""
 
-# Prüfe ob Skript aus dem richtigen Verzeichnis ausgeführt wird
+# Verzeichnis-Check
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ ! -f "$SCRIPT_DIR/src/app.py" ]]; then
-    echo -e "${RED}❌ Fehler: Bitte führe das Skript aus dem Repository-Verzeichnis aus${NC}"
-    echo "   cd airscan-web && ./setup.sh"
+    echo -e "${RED}❌ Fehler: Bitte aus dem Repository-Verzeichnis ausführen.${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Repository-Verzeichnis erkannt: $SCRIPT_DIR${NC}"
-echo ""
-
-# Konfiguration
-CURRENT_USER=$(whoami)
-HOME_DIR="$HOME"
-INSTALL_DIR="$HOME_DIR/scan-web"
-SCAN_SCRIPT_SOURCE="$SCRIPT_DIR/scripts/airscan.sh"
-SCAN_SCRIPT_TARGET="$HOME_DIR/airscan.sh"
-SERVICE_PORT=5000
-
-echo "📋 Konfiguration:"
-echo "   User:           $CURRENT_USER"
-echo "   Install-Dir:    $INSTALL_DIR"
-echo "   Scan-Skript:    $SCAN_SCRIPT_TARGET"
-echo "   Port:           $SERVICE_PORT"
+echo -e "${BLUE}📋 System-Voraussetzungen (Prerequisites):${NC}"
+echo "-------------------------------------------------------"
+echo "Das Programm benötigt folgende System-Komponenten:"
+echo -e "1. ${YELLOW}sane-utils${NC}      (Für die Kommunikation mit AirScan-Geräten)"
+echo -e "2. ${YELLOW}hplip${NC}           (Für HP-spezifische Funktionen/hp-scan)"
+echo -e "3. ${YELLOW}imagemagick${NC}     (Für die Konvertierung von Scans in PDF)"
+echo -e "4. ${YELLOW}ghostscript${NC}     (Für die Komprimierung der PDF-Dateien)"
+echo -e "5. ${YELLOW}python3-venv${NC}    (Für die isolierte Python-Umgebung)"
+echo -e "6. ${YELLOW}ocrmypdf${NC}        (Optional: Für die Texterkennung/OCR)"
+echo "-------------------------------------------------------"
 echo ""
 
 # Bestätigung
-read -p "Installation starten? [J/n] " -n 1 -r
+read -p "Soll die Installation (inkl. Paket-Prüfung) gestartet werden? [J/n] " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[JjYy]$ ]] && [[ ! -z $REPLY ]]; then
-    echo "Installation abgebrochen."
+    echo "Abgebrochen."
     exit 0
 fi
 
-# 1. Alte Installation aufräumen (falls vorhanden)
+# 1. System-Abhängigkeiten prüfen und installieren
 echo ""
-echo "🧹 Räume alte Installation auf..."
-
-# Service stoppen (falls läuft)
-if systemctl is-active --quiet scan-web 2>/dev/null; then
-    echo "   Stoppe alten Service..."
-    sudo systemctl stop scan-web
-fi
-
-# Alte Dateien mit falschen Berechtigungen entfernen
-if [[ -f "$SCAN_SCRIPT_TARGET" ]]; then
-    echo "   Entferne altes Scan-Skript..."
-    sudo rm -f "$SCAN_SCRIPT_TARGET"
-fi
-
-if [[ -d "$INSTALL_DIR" ]]; then
-    # Prüfe Besitzer
-    OWNER=$(stat -c '%U' "$INSTALL_DIR" 2>/dev/null || echo "unknown")
-    if [[ "$OWNER" != "$CURRENT_USER" ]]; then
-        echo "   Entferne Install-Dir mit falschen Berechtigungen (Besitzer: $OWNER)..."
-        sudo rm -rf "$INSTALL_DIR"
-    fi
-fi
-
-# 2. System-Abhängigkeiten prüfen und installieren
-echo ""
-echo "📦 Prüfe System-Abhängigkeiten..."
+echo "📦 Prüfe System-Pakete..."
+PACKAGES=(python3 python3-pip python3-venv python3-pil sane-utils hplip imagemagick ghostscript ocrmypdf tesseract-ocr-deu)
 MISSING_PACKAGES=()
 
-for pkg in python3 python3-pip python3-venv python3-pil; do
-    if ! dpkg -l | grep -q "^ii  $pkg "; then
-        MISSING_PACKAGES+=($pkg)
+for pkg in "${PACKAGES[@]}"; do
+    if ! dpkg -l | grep -q "^ii  $pkg " 2>/dev/null; then
+        MISSING_PACKAGES+=("$pkg")
     fi
 done
 
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  Fehlende Pakete: ${MISSING_PACKAGES[*]}${NC}"
-    echo "   Installiere..."
+    echo -e "${YELLOW}⚠️  Installiere fehlende Pakete: ${MISSING_PACKAGES[*]}${NC}"
     sudo apt update
     sudo apt install -y "${MISSING_PACKAGES[@]}"
-fi
-
-echo -e "${GREEN}✅ System-Abhängigkeiten OK${NC}"
-
-# 3. Scan-Skript kopieren (falls vorhanden)
-if [[ -f "$SCAN_SCRIPT_SOURCE" ]]; then
-    echo ""
-    echo "📄 Kopiere Scan-Skript..."
-    cp "$SCAN_SCRIPT_SOURCE" "$SCAN_SCRIPT_TARGET"
-    chmod +x "$SCAN_SCRIPT_TARGET"
-    chown "$CURRENT_USER:$CURRENT_USER" "$SCAN_SCRIPT_TARGET"
-    echo -e "${GREEN}✅ Scan-Skript installiert: $SCAN_SCRIPT_TARGET${NC}"
 else
-    echo ""
-    echo -e "${YELLOW}⚠️  Scan-Skript nicht im Repo gefunden${NC}"
-    if [[ ! -f "$SCAN_SCRIPT_TARGET" ]]; then
-        echo -e "${RED}❌ Kein Scan-Skript unter $SCAN_SCRIPT_TARGET gefunden!${NC}"
-        echo "   Bitte erstelle das Scan-Skript manuell oder lege es unter scripts/airscan.sh ab."
-        read -p "Trotzdem fortfahren? [j/N] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[JjYy]$ ]]; then
-            exit 1
-        fi
-    else
-        echo -e "${GREEN}✅ Vorhandenes Scan-Skript wird verwendet: $SCAN_SCRIPT_TARGET${NC}"
-    fi
+    echo -e "${GREEN}✅ Alle System-Pakete vorhanden.${NC}"
 fi
 
-# 4. Installations-Verzeichnis vorbereiten
-echo ""
-echo "📁 Erstelle Installations-Verzeichnis..."
+# 2. Installations-Pfade vorbereiten
+HOME_DIR="$HOME"
+INSTALL_DIR="$HOME_DIR/scan-web"
 mkdir -p "$INSTALL_DIR"
-chown "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
+mkdir -p "$HOME_DIR/scans"
 
-# 5. Dateien kopieren
-echo ""
+# 3. Dateien kopieren
 echo "📋 Kopiere App-Dateien..."
 cp -r "$SCRIPT_DIR/src/"* "$INSTALL_DIR/"
-chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
-echo -e "${GREEN}✅ Dateien kopiert${NC}"
+# Kopiere das Skript in das App-Verzeichnis
+mkdir -p "$INSTALL_DIR/scripts"
+cp "$SCRIPT_DIR/scripts/airscan.sh" "$INSTALL_DIR/scripts/airscan.sh"
+chmod +x "$INSTALL_DIR/scripts/airscan.sh"
 
-# 6. Python Virtual Environment erstellen
-echo ""
-echo "🐍 Erstelle Python Virtual Environment..."
+# 4. .env Datei erstellen falls nicht vorhanden
+if [[ ! -f "$INSTALL_DIR/.env" ]]; then
+    echo "⚙️ Erstelle Standard .env Konfiguration..."
+    echo 'DEVICE_URI=""' > "$INSTALL_DIR/.env"
+fi
+
+# 5. Python venv & Requirements
+echo "🐍 Bereite Python Virtual Environment vor..."
 cd "$INSTALL_DIR"
-
-if [[ -d "venv" ]]; then
-    echo "   Entferne altes venv..."
-    rm -rf venv
-fi
-
 python3 -m venv venv
-source venv/bin/activate
-
-# 7. Python-Pakete installieren
-echo ""
-echo "📦 Installiere Python-Pakete..."
+./venv/bin/pip install --upgrade pip -q
 if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
-    pip install --upgrade pip -q
-    pip install -r "$SCRIPT_DIR/requirements.txt" -q
+    ./venv/bin/pip install -r "$SCRIPT_DIR/requirements.txt" -q
 else
-    pip install --upgrade pip -q
-    pip install fastapi uvicorn[standard] python-multipart pillow -q
-fi
-echo -e "${GREEN}✅ Python-Pakete installiert${NC}"
-
-# 8. Icons generieren
-echo ""
-echo "🎨 Generiere PWA Icons..."
-if [[ -f "$INSTALL_DIR/generate-icons.py" ]]; then
-    python generate-icons.py
-    echo -e "${GREEN}✅ Icons generiert${NC}"
-else
-    echo -e "${YELLOW}⚠️  Icon-Generator nicht gefunden, überspringe...${NC}"
+    ./venv/bin/pip install fastapi uvicorn[standard] python-multipart pillow -q
 fi
 
-deactivate
-
-# 9. Scans-Verzeichnis erstellen
-echo ""
-echo "📁 Erstelle Scans-Verzeichnis..."
-mkdir -p "$HOME_DIR/scans"
-chown "$CURRENT_USER:$CURRENT_USER" "$HOME_DIR/scans"
-echo -e "${GREEN}✅ Scans-Verzeichnis erstellt: $HOME_DIR/scans${NC}"
-
-# 10. Systemd Service erstellen
-echo ""
-echo "⚙️  Erstelle Systemd Service..."
-
-sudo tee /etc/systemd/system/scan-web.service > /dev/null << EOFSERVICE
+# 6. Systemd Service (Benutzer-Ebene)
+echo "⚙️  Richte Systemd Service ein..."
+mkdir -p "$HOME/.config/systemd/user"
+cat << EOFSERVICE > "$HOME/.config/systemd/user/scan-web.service"
 [Unit]
-Description=Scanner PWA Web Interface
+Description=Scanner Web Interface
 After=network.target
 
 [Service]
 Type=simple
-User=$CURRENT_USER
-Group=$CURRENT_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port $SERVICE_PORT
+ExecStart=$INSTALL_DIR/venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 5000
 Restart=always
-RestartSec=10
-Environment="PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin"
-Environment="HOME=$HOME_DIR"
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 EOFSERVICE
 
-echo -e "${GREEN}✅ Service-Datei erstellt${NC}"
+systemctl --user daemon-reload
+systemctl --user enable scan-web
+systemctl --user restart scan-web
 
-# 11. Service aktivieren und starten
 echo ""
-echo "🚀 Starte Service..."
-sudo systemctl daemon-reload
-sudo systemctl enable scan-web
-sudo systemctl restart scan-web
-
-# Warte kurz und prüfe Status
-sleep 2
-
-if sudo systemctl is-active --quiet scan-web; then
-    echo -e "${GREEN}✅ Service läuft!${NC}"
-else
-    echo -e "${RED}❌ Service-Start fehlgeschlagen${NC}"
-    echo ""
-    echo "Fehler-Logs:"
-    sudo journalctl -u scan-web -n 30 --no-pager
-    echo ""
-    echo -e "${YELLOW}Tipp: Prüfe die Logs mit: sudo journalctl -u scan-web -f${NC}"
-    exit 1
-fi
-
-# 12. Netzwerk-Informationen
-echo ""
-IP_ADDR=$(hostname -I | awk '{print $1}')
-HOSTNAME=$(hostname)
-
-echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                                                        ║${NC}"
-echo -e "${BLUE}║  ${GREEN}✨ Installation erfolgreich abgeschlossen! ✨${BLUE}          ║${NC}"
-echo -e "${BLUE}║                                                        ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
-echo ""
-echo "📱 Zugriff auf die Scanner-App:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo -e "   ${GREEN}Lokal:${NC}        http://localhost:$SERVICE_PORT"
-echo -e "   ${GREEN}Netzwerk:${NC}     http://$IP_ADDR:$SERVICE_PORT"
-if [[ -n "$HOSTNAME" ]]; then
-    echo -e "   ${GREEN}Hostname:${NC}     http://$HOSTNAME.local:$SERVICE_PORT"
-fi
-echo ""
-echo "💡 PWA Installation (nur über HTTPS):"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   Für PWA-Installation über HTTPS nutze einen Tunnel:"
-echo ""
-echo "   # Option 1: Cloudflare Tunnel (kostenlos)"
-echo "   sudo snap install cloudflared"
-echo "   cloudflared tunnel --url http://localhost:$SERVICE_PORT"
-echo ""
-echo "   # Option 2: ngrok"
-echo "   curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null"
-echo "   echo 'deb https://ngrok-agent.s3.amazonaws.com buster main' | sudo tee /etc/apt/sources.list.d/ngrok.list"
-echo "   sudo apt update && sudo apt install ngrok"
-echo "   ngrok http $SERVICE_PORT"
-echo ""
-echo "📋 Nützliche Befehle:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   Status anzeigen:    sudo systemctl status scan-web"
-echo "   Service neustarten: sudo systemctl restart scan-web"
-echo "   Logs anzeigen:      sudo journalctl -u scan-web -f"
-echo "   Service stoppen:    sudo systemctl stop scan-web"
-echo ""
-echo "📁 Installierte Dateien:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   App-Verzeichnis:  $INSTALL_DIR"
-echo "   Scan-Skript:      $SCAN_SCRIPT_TARGET"
-echo "   Systemd-Service:  /etc/systemd/system/scan-web.service"
-echo "   Scan-Ausgabe:     $HOME_DIR/scans/"
-echo ""
-echo "🔧 Erste Schritte:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "   1. Öffne http://localhost:$SERVICE_PORT im Browser"
-echo "   2. Drücke F12 für Developer Console"
-echo "   3. Prüfe ob Scans angezeigt werden"
-echo ""
-echo "   Falls Scans nicht angezeigt werden:"
-echo "   - Prüfe Browser-Console auf Fehler (F12)"
-echo "   - Teste die API: curl http://localhost:$SERVICE_PORT/api/scans"
-echo ""
-echo -e "${GREEN}Viel Erfolg mit deinem Scanner! 🖨️${NC}"
-echo ""
+echo -e "${GREEN}✨ Installation abgeschlossen! ✨${NC}"
+echo "-------------------------------------------------------"
+echo "Die App läuft nun im Hintergrund (Port 5000)."
+echo "Konfiguration: $INSTALL_DIR/.env"
+echo "Scans landen in: $HOME_DIR/scans/"
+echo "-------------------------------------------------------"
