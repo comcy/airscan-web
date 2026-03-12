@@ -5,13 +5,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ -f "$SCRIPT_DIR/../.env" ]] && export $(grep -v '^#' "$SCRIPT_DIR/../.env" | xargs)
 
-# Bessere ImageMagick Erkennung
+# ImageMagick Erkennung
 if command -v magick &>/dev/null; then
   MAGICK_CMD="magick"
 elif command -v convert &>/dev/null; then
   MAGICK_CMD="convert"
 else
-  echo "❌ Fehler: ImageMagick (magick oder convert) nicht gefunden!" >&2; exit 1
+  echo "❌ Fehler: ImageMagick nicht gefunden!" >&2; exit 1
 fi
 
 DEVICE_URI="${DEVICE_URI:-}"
@@ -37,7 +37,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Automatische Erkennung
 if [[ -z "$DEVICE_URI" ]]; then
   DEVICE_URI=$(scanimage -L | grep -E "airscan|hpaio" | head -n 1 | sed -n "s/device \`\(.*\)' is a .*/\1/p" || true)
 fi
@@ -54,21 +53,28 @@ echo "➡️  Device: $DEVICE_URI"
 cd "$TMP_DIR"
 rm -f scan_*.tiff hpscan*.pdf hpscan*.png 2>/dev/null || true
 
+# Hilfsfunktion zum Filtern der nervigen HPLIP-Warnungen
+filter_hplip_noise() {
+  # Filtert Meldungen über fehlende Attribute in models.dat heraus
+  grep -v "no .* attributes found in" | grep -v "io/hpmud/model.c" || true
+}
+
 # --- STRATEGIE WÄHLEN ---
 if [[ "$DEVICE_URI" == airscan:* ]]; then
   echo "🚀 Nutze AirScan (scanimage)..."
   SRC_PARAM="Flatbed"; [[ "$SOURCE" == "adf" ]] && SRC_PARAM="ADF"
   
   set +e
-  scanimage -d "$DEVICE_URI" --source "$SRC_PARAM" --resolution "$RESOLUTION" --mode "$MODE" --format=tiff --batch="scan_%d.tiff" 2>scan.err
+  # Wir leiten stderr durch unseren Filter
+  scanimage -d "$DEVICE_URI" --source "$SRC_PARAM" --resolution "$RESOLUTION" --mode "$MODE" --format=tiff --batch="scan_%d.tiff" 2> >(filter_hplip_noise >&2)
   SCAN_EXIT=$?
   set -e
   
   if [[ $SCAN_EXIT -ne 0 ]] && ! ls scan_*.tiff &>/dev/null; then
-    echo "❌ Scanimage Fehler:"; cat scan.err >&2; exit 1
+    echo "❌ Scanimage Fehler (siehe Logs)." >&2; exit 1
   fi
 
-  echo "➡️  Konvertiere TIFF zu PDF mit $MAGICK_CMD..."
+  echo "➡️  Konvertiere zu PDF..."
   $MAGICK_CMD scan_*.tiff "$FINAL_PDF"
   rm -f scan_*.tiff
 
@@ -78,7 +84,7 @@ elif [[ "$DEVICE_URI" == hpaio:* ]]; then
   [[ "$SOURCE" == "adf" ]] && SCAN_CMD+=(--adf)
   
   set +e
-  "${SCAN_CMD[@]}" 2>scan.err
+  "${SCAN_CMD[@]}" 2> >(filter_hplip_noise >&2)
   SCAN_EXIT=$?
   set -e
   
@@ -92,7 +98,7 @@ elif [[ "$DEVICE_URI" == hpaio:* ]]; then
       $MAGICK_CMD "${png_files[@]}" "$FINAL_PDF"
       rm "${png_files[@]}"
     else
-      echo "❌ hp-scan Fehler:"; cat scan.err >&2; exit 1
+      echo "❌ hp-scan Fehler (siehe Logs)." >&2; exit 1
     fi
   fi
 else
